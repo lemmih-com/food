@@ -86,26 +86,25 @@ jobs:
         # Install wrangler
         npm install -g wrangler@latest
 
-        # Get absolute path to the result directory
-        RESULT_DIR="$(pwd)/result"
-
         # Create a temporary wrangler.toml for this deployment
         WRANGLER_CONFIG=$(mktemp)
-        cat > "$WRANGLER_CONFIG" << EOF
-        name = "${{ steps.check-deployment.outputs.deployment_name }}"
-        main = "$RESULT_DIR/worker/worker.js"
+        cat > "$WRANGLER_CONFIG" << 'EOF'
+        name = "food-pr-${{ github.event.pull_request.number }}"
+        main = "./worker/worker.js"
         compatibility_date = "2024-11-23"
         workers_dev = true
         account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
 
         [assets]
-        directory = "$RESULT_DIR/assets"
+        directory = "./assets"
         binding = "ASSETS"
         not_found_handling = "single-page-application"
         EOF
 
-        # Deploy using wrangler
+        # Deploy using wrangler from the result directory
+        cd result
         wrangler deploy --config "$WRANGLER_CONFIG"
+        cd ..
         rm -f "$WRANGLER_CONFIG"
 
     - name: Comment on PR
