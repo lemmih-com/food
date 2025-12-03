@@ -3,6 +3,10 @@ main = ".wrangler/dist/worker/worker.js"
 compatibility_date = "2024-11-23"
 workers_dev = true
 
+[[routes]]
+pattern = "food.lemmih.com"
+custom_domain = true
+
 [build]
 command = "nix build .#website -o .wrangler/dist"
 
