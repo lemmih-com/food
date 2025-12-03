@@ -266,6 +266,8 @@
           mkdir -p $out
           # Copy the base website
           cp -r ${websiteBase}/* $out/
+          # Fix permissions on copied directories
+          chmod -R u+w $out
           # Add the content hash file to assets
           install -Dm644 ${contentHash}/content-hash.txt $out/assets/content-hash.txt
           runHook postInstall
