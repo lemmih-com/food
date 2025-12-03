@@ -1,0 +1,39 @@
+name: Deploy to CloudFlare
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to CloudFlare Workers
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Determinate Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Configure Nix cache
+      uses: DeterminateSystems/magic-nix-cache-action@main
+
+    - name: Free up disk space
+      run: |
+        # Remove unnecessary software to free up space
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        df -h
+
+    - name: Build website
+      run: nix build .#website -o .wrangler/dist
+      timeout-minutes: 30
+
+    - name: Deploy to CloudFlare
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        command: deploy
