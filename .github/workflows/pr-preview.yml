@@ -50,31 +50,31 @@ jobs:
         DEPLOYMENT_NAME="food-pr-${{ github.event.pull_request.number }}"
         echo "deployment_name=$DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
-        # Try to get existing deployment hash
+        # Get hash from the global deployment (food.lemmih.com)
         EXISTING_HASH=""
-        PREVIEW_URL="https://$DEPLOYMENT_NAME.lemmih.workers.dev"
+        GLOBAL_URL="https://food.lemmih.com"
 
-        # Check if deployment exists by trying to fetch the hash file
+        # Check if global deployment exists by trying to fetch the hash file
         HASH_FILE=$(mktemp)
-        HTTP_CODE=$(curl -s -o "$HASH_FILE" -w "%{http_code}" "$PREVIEW_URL/content-hash.txt" || echo "000")
+        HTTP_CODE=$(curl -s -o "$HASH_FILE" -w "%{http_code}" "$GLOBAL_URL/content-hash.txt" || echo "000")
 
         if [ "$HTTP_CODE" = "200" ]; then
           EXISTING_HASH=$(cat "$HASH_FILE")
           echo "existing_hash=$EXISTING_HASH" >> $GITHUB_OUTPUT
-          echo "Existing deployment found with hash: $EXISTING_HASH"
+          echo "Global deployment hash: $EXISTING_HASH"
         else
           echo "existing_hash=" >> $GITHUB_OUTPUT
-          echo "No existing deployment found"
+          echo "Could not fetch global deployment hash"
         fi
         rm -f "$HASH_FILE"
 
         # Determine if we need to deploy
         if [ "$EXISTING_HASH" = "${{ steps.content-hash.outputs.hash }}" ]; then
           echo "needs_deploy=false" >> $GITHUB_OUTPUT
-          echo "Website content unchanged, skipping deployment"
+          echo "Website content matches global deployment, skipping preview"
         else
           echo "needs_deploy=true" >> $GITHUB_OUTPUT
-          echo "Website content changed, deployment needed"
+          echo "Website content differs from global deployment, preview needed"
         fi
 
     - name: Deploy to Cloudflare Workers
@@ -82,30 +82,10 @@ jobs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
       run: |
-        # Install wrangler
-        npm install -g wrangler@latest
-
-        # Create a temporary wrangler.toml for this deployment
-        WRANGLER_CONFIG=$(mktemp)
-        cat > "$WRANGLER_CONFIG" << 'EOF'
-        name = "food-pr-${{ github.event.pull_request.number }}"
-        main = "./worker/worker.js"
-        compatibility_date = "2024-11-23"
-        workers_dev = true
-        account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
-
-        [assets]
-        directory = "./assets"
-        binding = "ASSETS"
-        not_found_handling = "single-page-application"
-        EOF
-
-        # Deploy using wrangler from the result directory
-        cd result
-        wrangler deploy --config "$WRANGLER_CONFIG"
-        cd ..
-        rm -f "$WRANGLER_CONFIG"
+        # Deploy using the Nix deployment app
+        nix run .#deploy-preview
 
     - name: Comment on PR
       uses: actions/github-script@v7
@@ -138,17 +118,17 @@ jobs:
           - **Content Hash**: \`${contentHash}\`
           - **Deployment**: \`${deploymentName}\`
 
-          The preview will be updated automatically when you push new changes.`;
+          This preview differs from the global deployment and will be updated automatically when you push new changes.`;
           } else {
-            commentBody = `## ✅ Preview Deployment (Unchanged)
+            commentBody = `## ✅ Preview Deployment (Matches Global)
 
-          Your preview deployment is still up to date!
+          Your changes match the current global deployment at food.lemmih.com!
 
           - **Preview URL**: ${previewUrl}
           - **Content Hash**: \`${contentHash}\`
           - **Deployment**: \`${deploymentName}\`
 
-          No changes detected in client, server, or assets.`;
+          No preview deployment needed as content matches the global deployment.`;
           }
 
           if (botComment) {

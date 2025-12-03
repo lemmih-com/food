@@ -18,3 +18,11 @@ main = "result/worker/worker.js"
 directory = "result/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+[env.preview]
+main = "result/worker/worker.js"
+
+[env.preview.assets]
+directory = "result/assets"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

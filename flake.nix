@@ -315,6 +315,36 @@
         };
       };
 
+      apps.deploy-preview = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "deploy-preview";
+          runtimeInputs = with pkgs; [wranglerPkg curl];
+          text = ''
+            # Check for required environment variables
+            if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
+              echo "Error: CLOUDFLARE_API_TOKEN environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "Error: CLOUDFLARE_ACCOUNT_ID environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${PR_NUMBER:-}" ]; then
+              echo "Error: PR_NUMBER environment variable is required"
+              exit 1
+            fi
+
+            # Set deployment name
+            DEPLOYMENT_NAME="food-pr-$PR_NUMBER"
+            echo "Deploying preview for PR #$PR_NUMBER as $DEPLOYMENT_NAME"
+
+            # Deploy using wrangler with the preview environment
+            cd ${webappPath}
+            wrangler deploy --name "$DEPLOYMENT_NAME" --env preview
+          '';
+        };
+      };
+
       checks = {
         alejandra = pkgs.runCommand "alejandra-check" {} ''
           ${alejandra.packages.${system}.default}/bin/alejandra --check ${./.}
