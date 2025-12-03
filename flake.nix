@@ -226,15 +226,8 @@
           platforms = platforms.all;
         };
       };
-      contentHash = pkgs.runCommand "content-hash" {
-        nativeBuildInputs = [pkgs.coreutils];
-      } ''
-        mkdir -p $out
-        cd ${src}
-        ${pkgs.bash}/bin/bash ${./nix/generate-content-hash.sh} $out/content-hash.txt
-      '';
-      website = pkgs.stdenv.mkDerivation {
-        pname = "food-lemmih-com-website";
+      websiteBase = pkgs.stdenv.mkDerivation {
+        pname = "food-lemmih-com-website-base";
         version = "0.1.0";
         src = null;
         dontUnpack = true;
@@ -248,7 +241,32 @@
           cp -r ${workerBundle}/worker $out/
           # Ensure CSS is still there after copying assets
           cp ${tailwindCss}/styles.css $out/assets/pkg/styles.css
-          # Copy content hash file to assets
+          runHook postInstall
+        '';
+        meta = with lib; {
+          description = "food.lemmih.com worker bundle with client assets (without hash)";
+          platforms = platforms.all;
+        };
+      };
+      contentHash = pkgs.runCommand "content-hash" {
+        nativeBuildInputs = [pkgs.coreutils pkgs.findutils];
+      } ''
+        mkdir -p $out
+        # Hash the built website output
+        find ${websiteBase} -type f | sort | xargs cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
+        echo "Content hash generated: $(cat $out/content-hash.txt)"
+      '';
+      website = pkgs.stdenv.mkDerivation {
+        pname = "food-lemmih-com-website";
+        version = "0.1.0";
+        src = null;
+        dontUnpack = true;
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          # Copy the base website
+          cp -r ${websiteBase}/* $out/
+          # Add the content hash file to assets
           install -Dm644 ${contentHash}/content-hash.txt $out/assets/content-hash.txt
           runHook postInstall
         '';
