@@ -253,7 +253,7 @@
       } ''
         mkdir -p $out
         # Hash the built website output
-        find ${websiteBase} -type f | sort | xargs cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
+        find ${websiteBase} -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
         echo "Content hash generated: $(cat $out/content-hash.txt)"
       '';
       website = pkgs.stdenv.mkDerivation {
