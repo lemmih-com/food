@@ -226,8 +226,8 @@
           platforms = platforms.all;
         };
       };
-      website = pkgs.stdenv.mkDerivation {
-        pname = "food-lemmih-com-website";
+      websiteBase = pkgs.stdenv.mkDerivation {
+        pname = "food-lemmih-com-website-base";
         version = "0.1.0";
         src = null;
         dontUnpack = true;
@@ -241,6 +241,35 @@
           cp -r ${workerBundle}/worker $out/
           # Ensure CSS is still there after copying assets
           cp ${tailwindCss}/styles.css $out/assets/pkg/styles.css
+          runHook postInstall
+        '';
+        meta = with lib; {
+          description = "food.lemmih.com worker bundle with client assets (without hash)";
+          platforms = platforms.all;
+        };
+      };
+      contentHash = pkgs.runCommand "content-hash" {
+        nativeBuildInputs = [pkgs.coreutils pkgs.findutils];
+      } ''
+        mkdir -p $out
+        # Hash the built website output
+        find ${websiteBase} -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
+        echo "Content hash generated: $(cat $out/content-hash.txt)"
+      '';
+      website = pkgs.stdenv.mkDerivation {
+        pname = "food-lemmih-com-website";
+        version = "0.1.0";
+        src = null;
+        dontUnpack = true;
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          # Copy the base website
+          cp -r ${websiteBase}/* $out/
+          # Fix permissions on copied directories
+          chmod -R u+w $out
+          # Add the content hash file to assets
+          install -Dm644 ${contentHash}/content-hash.txt $out/assets/content-hash.txt
           runHook postInstall
         '';
         meta = with lib; {
@@ -282,6 +311,68 @@
             E2E_TESTS_BIN=${e2eBinPath}/bin/food-lemmih-com-e2e-tests
             export WEBAPP_PATH CURL_BIN WRANGLER_BIN E2E_TESTS_BIN
             ${./nix/run-e2e-tests.sh}
+          '';
+        };
+      };
+
+      apps.deploy-preview = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "deploy-preview";
+          runtimeInputs = with pkgs; [wranglerPkg curl coreutils];
+          text = ''
+            # Check for required environment variables
+            if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
+              echo "Error: CLOUDFLARE_API_TOKEN environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "Error: CLOUDFLARE_ACCOUNT_ID environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${PR_NUMBER:-}" ]; then
+              echo "Error: PR_NUMBER environment variable is required"
+              exit 1
+            fi
+
+            # Set deployment name
+            DEPLOYMENT_NAME="food-pr-$PR_NUMBER"
+            echo "Deploying preview for PR #$PR_NUMBER as $DEPLOYMENT_NAME"
+
+            # Create result symlink pointing to the website build output
+            # This is needed because wrangler.toml expects result/ to exist
+            ln -sfn ${webappPath} result
+
+            # Deploy using wrangler with the preview environment from the repo root
+            wrangler deploy --name "$DEPLOYMENT_NAME" --env preview
+          '';
+        };
+      };
+
+      apps.delete-preview = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "delete-preview";
+          runtimeInputs = with pkgs; [wranglerPkg];
+          text = ''
+            # Check for required environment variables
+            if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
+              echo "Error: CLOUDFLARE_API_TOKEN environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "Error: CLOUDFLARE_ACCOUNT_ID environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${PR_NUMBER:-}" ]; then
+              echo "Error: PR_NUMBER environment variable is required"
+              exit 1
+            fi
+
+            # Set deployment name
+            DEPLOYMENT_NAME="food-pr-$PR_NUMBER"
+            echo "Attempting to delete deployment: $DEPLOYMENT_NAME"
+
+            # Delete the deployment
+            wrangler delete --name "$DEPLOYMENT_NAME" --force || echo "Deployment may not exist or already deleted"
           '';
         };
       };
