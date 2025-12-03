@@ -1,0 +1,20 @@
+name = "food-lemmih-com"
+main = ".wrangler/dist/worker/worker.js"
+compatibility_date = "2024-11-23"
+workers_dev = true
+
+[build]
+command = "nix build .#website -o .wrangler/dist"
+
+[assets]
+directory = ".wrangler/dist/assets"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[env.e2e]
+main = "result/worker/worker.js"
+
+[env.e2e.assets]
+directory = "result/assets"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
