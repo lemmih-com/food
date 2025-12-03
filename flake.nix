@@ -348,6 +348,35 @@
         };
       };
 
+      apps.delete-preview = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "delete-preview";
+          runtimeInputs = with pkgs; [wranglerPkg];
+          text = ''
+            # Check for required environment variables
+            if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
+              echo "Error: CLOUDFLARE_API_TOKEN environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "Error: CLOUDFLARE_ACCOUNT_ID environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${PR_NUMBER:-}" ]; then
+              echo "Error: PR_NUMBER environment variable is required"
+              exit 1
+            fi
+
+            # Set deployment name
+            DEPLOYMENT_NAME="food-pr-$PR_NUMBER"
+            echo "Attempting to delete deployment: $DEPLOYMENT_NAME"
+
+            # Delete the deployment
+            wrangler delete --name "$DEPLOYMENT_NAME" --force || echo "Deployment may not exist or already deleted"
+          '';
+        };
+      };
+
       checks = {
         alejandra = pkgs.runCommand "alejandra-check" {} ''
           ${alejandra.packages.${system}.default}/bin/alejandra --check ${./.}
