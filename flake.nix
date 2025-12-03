@@ -226,6 +226,12 @@
           platforms = platforms.all;
         };
       };
+      contentHash = pkgs.runCommand "content-hash" {
+        nativeBuildInputs = [pkgs.coreutils];
+      } ''
+        cd ${src}
+        ${pkgs.bash}/bin/bash ${./nix/generate-content-hash.sh} $out/content-hash.txt
+      '';
       website = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-website";
         version = "0.1.0";
@@ -241,6 +247,8 @@
           cp -r ${workerBundle}/worker $out/
           # Ensure CSS is still there after copying assets
           cp ${tailwindCss}/styles.css $out/assets/pkg/styles.css
+          # Copy content hash file to assets
+          install -Dm644 ${contentHash}/content-hash.txt $out/assets/content-hash.txt
           runHook postInstall
         '';
         meta = with lib; {
