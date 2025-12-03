@@ -86,17 +86,20 @@ jobs:
         # Install wrangler
         npm install -g wrangler@latest
 
+        # Get absolute path to the result directory
+        RESULT_DIR="$(pwd)/result"
+
         # Create a temporary wrangler.toml for this deployment
         WRANGLER_CONFIG=$(mktemp)
         cat > "$WRANGLER_CONFIG" << EOF
         name = "${{ steps.check-deployment.outputs.deployment_name }}"
-        main = "result/worker/worker.js"
+        main = "$RESULT_DIR/worker/worker.js"
         compatibility_date = "2024-11-23"
         workers_dev = true
         account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
 
         [assets]
-        directory = "result/assets"
+        directory = "$RESULT_DIR/assets"
         binding = "ASSETS"
         not_found_handling = "single-page-application"
         EOF
