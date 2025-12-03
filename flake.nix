@@ -162,7 +162,6 @@
         });
       inputCssFile = pkgs.writeText "input.css" ''
         @import "tailwindcss";
-        @source "./crates";
       '';
       tailwindCss = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-tailwindcss";
@@ -187,7 +186,7 @@
           cp -r ${lib.cleanSource ./crates} crates
 
           # Build CSS
-          tailwindcss -i input.css -o styles.css --minify
+          tailwindcss -i input.css -o styles.css --minify --content './crates/**/*.rs'
 
           # Move back to original directory and save path
           cd "$OLDPWD"
