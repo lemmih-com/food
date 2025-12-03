@@ -33,6 +33,12 @@ impl TestRunner {
         self.driver.source().await.context("getting page source")
     }
 
+    async fn get_page_source_at(&self, path: &str) -> Result<String> {
+        let url = format!("{}{}", self.base_url, path);
+        self.driver.goto(&url).await?;
+        self.driver.source().await.context("getting page source")
+    }
+
     async fn get_css_content(&self) -> Result<String> {
         let css_url = format!("{}/pkg/styles.css", self.base_url);
         self.driver.goto(&css_url).await?;
@@ -55,6 +61,94 @@ async fn test_main_page_reachable(runner: &TestRunner) -> Result<()> {
     assert!(
         body.contains("food.lemmih.com"),
         "HTML should contain 'food.lemmih.com'"
+    );
+
+    assert!(
+        body.contains("Food Log"),
+        "Main page should contain 'Food Log' heading"
+    );
+
+    Ok(())
+}
+
+/// Test: Navigation links are present
+async fn test_navigation_links_present(runner: &TestRunner) -> Result<()> {
+    let body = runner.get_page_source().await?;
+
+    let required_links = [
+        ("Food Log", "Main page link"),
+        ("Ingredients", "Ingredients page link"),
+        ("Recipes", "Recipes page link"),
+        ("Settings", "Settings page link"),
+    ];
+
+    let mut missing = Vec::new();
+    for (link_text, context) in &required_links {
+        if !body.contains(link_text) {
+            missing.push(format!("{} ({})", link_text, context));
+        }
+    }
+
+    assert!(
+        missing.is_empty(),
+        "Navigation should contain all required links. Missing: {:?}",
+        missing
+    );
+
+    Ok(())
+}
+
+/// Test: Ingredients page is accessible and contains expected content
+async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
+    let body = runner.get_page_source_at("/ingredients").await?;
+
+    assert!(
+        body.contains("Ingredient List"),
+        "Ingredients page should contain 'Ingredient List' heading"
+    );
+
+    assert!(
+        body.contains("Chicken Breast") || body.contains("chicken breast"),
+        "Ingredients page should contain sample ingredient data"
+    );
+
+    assert!(
+        body.contains("Protein") && body.contains("Carbs"),
+        "Ingredients page should contain nutritional columns"
+    );
+
+    Ok(())
+}
+
+/// Test: Recipes page is accessible and contains expected content
+async fn test_recipes_page_accessible(runner: &TestRunner) -> Result<()> {
+    let body = runner.get_page_source_at("/recipes").await?;
+
+    assert!(
+        body.contains("Recipes"),
+        "Recipes page should contain 'Recipes' heading"
+    );
+
+    assert!(
+        body.contains("Ingredients:") && body.contains("Instructions:"),
+        "Recipes page should contain recipe structure"
+    );
+
+    Ok(())
+}
+
+/// Test: Settings page is accessible and contains expected content
+async fn test_settings_page_accessible(runner: &TestRunner) -> Result<()> {
+    let body = runner.get_page_source_at("/settings").await?;
+
+    assert!(
+        body.contains("Settings"),
+        "Settings page should contain 'Settings' heading"
+    );
+
+    assert!(
+        body.contains("Target Calories") || body.contains("Macro Distribution"),
+        "Settings page should contain settings options"
     );
 
     Ok(())
@@ -162,6 +256,10 @@ async fn main() -> Result<()> {
 
     let result = run_tests!(&runner;
         "Main page is reachable" => test_main_page_reachable,
+        "Navigation links present" => test_navigation_links_present,
+        "Ingredients page accessible" => test_ingredients_page_accessible,
+        "Recipes page accessible" => test_recipes_page_accessible,
+        "Settings page accessible" => test_settings_page_accessible,
         "CSS link present in HTML" => test_css_link_present,
         "CSS file is accessible" => test_css_file_accessible,
         "CSS contains Tailwind classes" => test_css_contains_tailwind_classes,
