@@ -8,6 +8,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy to CloudFlare Workers
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout code
