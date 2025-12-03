@@ -55,16 +55,18 @@ jobs:
         PREVIEW_URL="https://$DEPLOYMENT_NAME.lemmih.workers.dev"
 
         # Check if deployment exists by trying to fetch the hash file
-        HTTP_CODE=$(curl -s -o /tmp/existing-hash.txt -w "%{http_code}" "$PREVIEW_URL/content-hash.txt" || echo "000")
+        HASH_FILE=$(mktemp)
+        HTTP_CODE=$(curl -s -o "$HASH_FILE" -w "%{http_code}" "$PREVIEW_URL/content-hash.txt" || echo "000")
 
         if [ "$HTTP_CODE" = "200" ]; then
-          EXISTING_HASH=$(cat /tmp/existing-hash.txt)
+          EXISTING_HASH=$(cat "$HASH_FILE")
           echo "existing_hash=$EXISTING_HASH" >> $GITHUB_OUTPUT
           echo "Existing deployment found with hash: $EXISTING_HASH"
         else
           echo "existing_hash=" >> $GITHUB_OUTPUT
           echo "No existing deployment found"
         fi
+        rm -f "$HASH_FILE"
 
         # Determine if we need to deploy
         if [ "$EXISTING_HASH" = "${{ steps.content-hash.outputs.hash }}" ]; then
@@ -85,7 +87,8 @@ jobs:
         npm install -g wrangler@latest
 
         # Create a temporary wrangler.toml for this deployment
-        cat > wrangler-preview.toml << EOF
+        WRANGLER_CONFIG=$(mktemp)
+        cat > "$WRANGLER_CONFIG" << EOF
         name = "${{ steps.check-deployment.outputs.deployment_name }}"
         main = "result/worker/worker.js"
         compatibility_date = "2024-11-23"
@@ -99,7 +102,8 @@ jobs:
         EOF
 
         # Deploy using wrangler
-        wrangler deploy --config wrangler-preview.toml
+        wrangler deploy --config "$WRANGLER_CONFIG"
+        rm -f "$WRANGLER_CONFIG"
 
     - name: Comment on PR
       uses: actions/github-script@v7
