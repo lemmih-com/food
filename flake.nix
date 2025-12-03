@@ -318,7 +318,7 @@
       apps.deploy-preview = flake-utils.lib.mkApp {
         drv = pkgs.writeShellApplication {
           name = "deploy-preview";
-          runtimeInputs = with pkgs; [wranglerPkg curl];
+          runtimeInputs = with pkgs; [wranglerPkg curl coreutils];
           text = ''
             # Check for required environment variables
             if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
@@ -338,8 +338,11 @@
             DEPLOYMENT_NAME="food-pr-$PR_NUMBER"
             echo "Deploying preview for PR #$PR_NUMBER as $DEPLOYMENT_NAME"
 
-            # Deploy using wrangler with the preview environment
-            cd ${webappPath}
+            # Create result symlink pointing to the website build output
+            # This is needed because wrangler.toml expects result/ to exist
+            ln -sfn ${webappPath} result
+
+            # Deploy using wrangler with the preview environment from the repo root
             wrangler deploy --name "$DEPLOYMENT_NAME" --env preview
           '';
         };
