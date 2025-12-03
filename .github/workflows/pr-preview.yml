@@ -52,7 +52,7 @@ jobs:
 
         # Try to get existing deployment hash
         EXISTING_HASH=""
-        PREVIEW_URL="https://$DEPLOYMENT_NAME.lemmih.com"
+        PREVIEW_URL="https://$DEPLOYMENT_NAME.lemmih.workers.dev"
 
         # Check if deployment exists by trying to fetch the hash file
         HTTP_CODE=$(curl -s -o /tmp/existing-hash.txt -w "%{http_code}" "$PREVIEW_URL/content-hash.txt" || echo "000")
@@ -90,6 +90,7 @@ jobs:
         main = "result/worker/worker.js"
         compatibility_date = "2024-11-23"
         workers_dev = true
+        account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
 
         [assets]
         directory = "result/assets"
