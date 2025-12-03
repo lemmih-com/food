@@ -229,6 +229,7 @@
       contentHash = pkgs.runCommand "content-hash" {
         nativeBuildInputs = [pkgs.coreutils];
       } ''
+        mkdir -p $out
         cd ${src}
         ${pkgs.bash}/bin/bash ${./nix/generate-content-hash.sh} $out/content-hash.txt
       '';
