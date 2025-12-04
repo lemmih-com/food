@@ -55,22 +55,19 @@ jobs:
         # Create the post-build hook script
         # This script is called after EVERY derivation is built (not substituted)
         # It receives OUT_PATHS (space-separated list of output paths)
-        # Note: Using heredoc without quotes to expand variables directly into the script
         # We embed AWS credentials directly since the daemon runs in a different environment
-        sudo tee /etc/nix/post-build-hook.sh > /dev/null << HOOK_EOF
-        #!/bin/bash
-        set -eu
-        set -o pipefail
-
-        # Set AWS credentials for R2 access
-        export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
-        export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
-
-        # OUT_PATHS contains space-separated store paths that were just built
-        # Upload each path to the R2 cache
-        echo "Uploading paths to R2 cache: \$OUT_PATHS"
-        exec nix copy --to "s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd" \$OUT_PATHS
-        HOOK_EOF
+        # Using printf to avoid heredoc indentation issues (shebang must start at column 0)
+        printf '%s\n' \
+          '#!/bin/bash' \
+          'set -eu' \
+          'set -o pipefail' \
+          '' \
+          "export AWS_ACCESS_KEY_ID=\"${AWS_ACCESS_KEY_ID}\"" \
+          "export AWS_SECRET_ACCESS_KEY=\"${AWS_SECRET_ACCESS_KEY}\"" \
+          '' \
+          'echo "Uploading paths to R2 cache: $OUT_PATHS"' \
+          "exec nix copy --to \"s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd\" \$OUT_PATHS" \
+          | sudo tee /etc/nix/post-build-hook.sh > /dev/null
         sudo chmod +x /etc/nix/post-build-hook.sh
 
         # Configure nix with substituter and post-build-hook
