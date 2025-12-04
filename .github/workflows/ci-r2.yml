@@ -66,7 +66,7 @@ jobs:
           "export AWS_SECRET_ACCESS_KEY=\"${AWS_SECRET_ACCESS_KEY}\"" \
           '' \
           'echo "Uploading paths to R2 cache: $OUT_PATHS"' \
-          "exec nix copy --to \"s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd\" \$OUT_PATHS" \
+          "exec /nix/var/nix/profiles/default/bin/nix copy --to \"s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd\" \$OUT_PATHS" \
           | sudo tee /etc/nix/post-build-hook.sh > /dev/null
         sudo chmod +x /etc/nix/post-build-hook.sh
 
