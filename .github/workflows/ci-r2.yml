@@ -99,6 +99,9 @@ jobs:
         ls -la /etc/nix/post-build-hook.sh
         file /etc/nix/post-build-hook.sh
         head -c 50 /etc/nix/post-build-hook.sh | xxd
+        echo ""
+        echo "=== Test hook script directly ==="
+        OUT_PATHS="/nix/store/test" /etc/nix/post-build-hook.sh || echo "Hook test failed with exit code: $?"
 
     - name: Test R2 upload manually
       env:
