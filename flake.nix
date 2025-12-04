@@ -161,21 +161,7 @@
           '';
         });
       inputCssFile = pkgs.writeText "input.css" ''
-        @tailwind base;
-        @tailwind components;
-        @tailwind utilities;
-      '';
-      tailwindConfigFile = pkgs.writeText "tailwind.config.js" ''
-        /** @type {import('tailwindcss').Config} */
-        module.exports = {
-          content: [
-            "./crates/**/*.rs",
-          ],
-          theme: {
-            extend: {},
-          },
-          plugins: [],
-        }
+        @import "tailwindcss";
       '';
       tailwindCss = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-tailwindcss";
@@ -193,15 +179,14 @@
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
 
-          # Copy input.css and config
+          # Copy input.css
           cp ${inputCssFile} input.css
-          cp ${tailwindConfigFile} tailwind.config.js
 
           # Copy crates directory for content scanning
           cp -r ${lib.cleanSource ./crates} crates
 
           # Build CSS
-          tailwindcss -i input.css -o styles.css --minify
+          tailwindcss -i input.css -o styles.css --minify --content './crates/**/*.rs'
 
           # Move back to original directory and save path
           cd "$OLDPWD"
