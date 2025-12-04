@@ -1,4 +1,4 @@
-name: CI (R2 Cache)
+name: CI
 
 on:
   workflow_dispatch:
