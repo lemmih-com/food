@@ -90,22 +90,17 @@ jobs:
         echo "=== Post-build hook ==="
         cat /etc/nix/post-build-hook.sh
 
-    - name: Build and cache all derivations
+    - name: Build e2e-tests package
       run: |
         # Build the e2e-tests package
         # The post-build hook automatically uploads every derivation as it's built,
         # including intermediate ones like clientArtifacts, workerArtifacts, etc.
-        nix build .#e2e-tests --no-link --print-out-paths
-
-        # Also build the app wrapper which includes runtime deps (wrangler, geckodriver, website)
-        APP_PROGRAM=$(nix eval --raw ".#apps.x86_64-linux.e2e-tests.program")
-        APP_STORE_PATH=$(dirname "$(dirname "$APP_PROGRAM")")
-        echo "Building app wrapper: $APP_STORE_PATH"
-        nix-store --realise "$APP_STORE_PATH"
-
-        echo "All derivations built and uploaded to R2 cache!"
+        nix build .#e2e-tests --no-link
       timeout-minutes: 30
 
     - name: Run e2e tests
-      run: nix run .#e2e-tests
+      run: |
+        # This also builds the app wrapper and its runtime deps (wrangler, geckodriver, website)
+        # The post-build hook will upload those as well
+        nix run .#e2e-tests
       timeout-minutes: 20
