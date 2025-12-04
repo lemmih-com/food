@@ -46,11 +46,11 @@ jobs:
         EOF
         sudo chmod 600 /root/.aws/credentials
 
-        # Create the signing key file
+        # Create the signing key file (readable by all since nix copy runs as runner user)
         sudo tee /etc/nix/cache-priv-key.pem > /dev/null << EOF
         ${NIX_SECRET_KEY}
         EOF
-        sudo chmod 600 /etc/nix/cache-priv-key.pem
+        sudo chmod 644 /etc/nix/cache-priv-key.pem
 
         # Create the post-build hook script
         # This script is called after EVERY derivation is built (not substituted)
@@ -74,9 +74,9 @@ jobs:
         sudo chmod +x /etc/nix/post-build-hook.sh
 
         # Configure nix with substituter and post-build-hook
+        # Determinate Nix uses nix.custom.conf for user customizations (it rewrites nix.conf on restart)
         S3_SUBSTITUTER="s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}"
-        sudo tee -a /etc/nix/nix.conf > /dev/null << EOF
-
+        sudo tee /etc/nix/nix.custom.conf > /dev/null << EOF
         # R2 cache configuration
         extra-substituters = ${S3_SUBSTITUTER}
         extra-trusted-public-keys = ${{ env.NIX_CACHE_PUBLIC_KEY }}
