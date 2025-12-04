@@ -264,6 +264,17 @@
       };
       webappPath = website;
       e2eBinPath = e2eTests;
+      
+      # Screenshot tool using Playwright
+      screenshotTool = pkgs.writeShellApplication {
+        name = "capture-screenshot";
+        runtimeInputs = with pkgs; [ nodejs_20 playwright-driver ];
+        text = ''
+          export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+          export PLAYWRIGHT_CLI_PATH=${pkgs.playwright-driver}/cli.js
+          exec node ${./nix/screenshot.js} "$@"
+        '';
+      };
     in {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [
@@ -284,6 +295,8 @@
       packages.e2e-tests = e2eTests;
 
       packages.website = website;
+
+      packages.screenshot-tool = screenshotTool;
 
       apps.e2e-tests = flake-utils.lib.mkApp {
         drv = pkgs.writeShellApplication {
@@ -358,6 +371,20 @@
 
             # Delete the deployment
             wrangler delete --name "$DEPLOYMENT_NAME" --force || echo "Deployment may not exist or already deleted"
+          '';
+        };
+      };
+
+      apps.capture-screenshot = flake-utils.lib.mkApp {
+        drv = screenshotTool;
+      };
+
+      apps.pr-snapshots = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "pr-snapshots";
+          runtimeInputs = with pkgs; [ screenshotTool ];
+          text = ''
+            exec ${./nix/pr-snapshots.sh} "$@"
           '';
         };
       };
