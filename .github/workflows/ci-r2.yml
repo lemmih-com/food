@@ -92,6 +92,23 @@ jobs:
         echo "=== Post-build hook ==="
         cat /etc/nix/post-build-hook.sh
 
+    - name: Test R2 upload manually
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        R2_ENDPOINT="${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+        # Build a small test derivation and upload it manually to verify credentials work
+        TEST_PATH=$(nix build --no-link --print-out-paths --impure --expr '
+          let pkgs = import <nixpkgs> {};
+          in pkgs.runCommand "test-r2-upload-${toString builtins.currentTime}" {} "echo test > $out"
+        ')
+        echo "Built test derivation: $TEST_PATH"
+        echo "Uploading to R2..."
+        nix copy --to "s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd" "$TEST_PATH"
+        echo "Manual upload successful!"
+
     - name: Build e2e-tests package
       run: |
         # Build the e2e-tests package
@@ -99,6 +116,12 @@ jobs:
         # including intermediate ones like clientArtifacts, workerArtifacts, etc.
         nix build .#e2e-tests --no-link
       timeout-minutes: 30
+
+    - name: Check daemon logs for hook errors
+      if: always()
+      run: |
+        echo "=== Nix daemon logs (last 100 lines) ==="
+        sudo journalctl -u nix-daemon --no-pager -n 100 || true
 
     - name: Run e2e tests
       run: |
