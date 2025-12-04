@@ -128,11 +128,17 @@ jobs:
         nix build .#e2e-tests --no-link
       timeout-minutes: 30
 
-    - name: Check daemon logs for hook errors
+    - name: Check disk usage
       if: always()
       run: |
-        echo "=== Nix daemon logs (last 100 lines) ==="
-        sudo journalctl -u nix-daemon --no-pager -n 100 || true
+        echo "=== Disk usage ==="
+        df -h
+        echo ""
+        echo "=== Nix store size ==="
+        du -sh /nix/store || true
+        echo ""
+        echo "=== Nix daemon logs (last 50 lines) ==="
+        sudo journalctl -u nix-daemon --no-pager -n 50 || true
 
     - name: Run e2e tests
       run: |
