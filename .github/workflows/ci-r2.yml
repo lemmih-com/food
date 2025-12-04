@@ -1,7 +1,10 @@
-name: CI (R2 Cache)
+name: CI
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   R2_BUCKET: nix-cache
@@ -26,6 +29,15 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         R2_ENDPOINT="${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+        # Create AWS credentials file for the daemon to read from R2 substituter
+        sudo mkdir -p /root/.aws
+        printf '%s\n' \
+          '[default]' \
+          "aws_access_key_id = ${AWS_ACCESS_KEY_ID}" \
+          "aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}" \
+          | sudo tee /root/.aws/credentials > /dev/null
+        sudo chmod 600 /root/.aws/credentials
 
         # Create the signing key file (readable by all since nix copy runs as runner user)
         sudo tee /etc/nix/cache-priv-key.pem > /dev/null <<< "${NIX_SECRET_KEY}"
@@ -58,6 +70,10 @@ jobs:
 
         # Restart nix-daemon to pick up new configuration
         sudo systemctl restart nix-daemon
+
+    - name: Run flake checks
+      run: nix flake check
+      timeout-minutes: 30
 
     - name: Build e2e-tests package
       run: nix build .#e2e-tests --no-link

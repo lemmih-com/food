@@ -233,14 +233,15 @@
           platforms = platforms.all;
         };
       };
-      contentHash = pkgs.runCommand "content-hash" {
-        nativeBuildInputs = [pkgs.coreutils pkgs.findutils];
-      } ''
-        mkdir -p $out
-        # Hash the built website output
-        find ${websiteBase} -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
-        echo "Content hash generated: $(cat $out/content-hash.txt)"
-      '';
+      contentHash =
+        pkgs.runCommand "content-hash" {
+          nativeBuildInputs = [pkgs.coreutils pkgs.findutils];
+        } ''
+          mkdir -p $out
+          # Hash the built website output
+          find ${websiteBase} -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}' > $out/content-hash.txt
+          echo "Content hash generated: $(cat $out/content-hash.txt)"
+        '';
       website = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-website";
         version = "0.1.0";
