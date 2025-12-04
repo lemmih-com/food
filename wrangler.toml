@@ -25,6 +25,8 @@ not_found_handling = "single-page-application"
 
 [env.preview]
 main = "result/worker/worker.js"
+workers_dev = true
+routes = []
 
 [env.preview.assets]
 directory = "result/assets"
