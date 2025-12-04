@@ -89,8 +89,16 @@ jobs:
         echo "=== Nix configuration ==="
         cat /etc/nix/nix.conf
         echo ""
+        echo "=== nix.custom.conf ==="
+        cat /etc/nix/nix.custom.conf
+        echo ""
         echo "=== Post-build hook ==="
         cat /etc/nix/post-build-hook.sh
+        echo ""
+        echo "=== Hook file details ==="
+        ls -la /etc/nix/post-build-hook.sh
+        file /etc/nix/post-build-hook.sh
+        head -c 50 /etc/nix/post-build-hook.sh | xxd
 
     - name: Test R2 upload manually
       env:
