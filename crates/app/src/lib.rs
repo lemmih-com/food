@@ -52,7 +52,7 @@ fn Home() -> impl IntoView {
                         <span class="text-yellow-500">"⭐⭐⭐⭐⭐"</span>
                     </div>
                 </div>
-                
+
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <div class="mb-4 h-48 rounded bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                         <span class="text-6xl">"🥗"</span>
@@ -69,7 +69,7 @@ fn Home() -> impl IntoView {
                         <span class="text-yellow-500">"⭐⭐⭐⭐"</span>
                     </div>
                 </div>
-                
+
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <div class="mb-4 h-48 rounded bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
                         <span class="text-6xl">"🍝"</span>
@@ -281,93 +281,371 @@ fn Recipes() -> impl IntoView {
     }
 }
 
+// Conversion factor: 1g salt = 393.4mg sodium (sodium is ~39.34% of salt by weight)
+// So 2300mg sodium ≈ 5.84g salt, and 5g salt ≈ 1967mg sodium
+
+// Calories per gram for macros
+const CALORIES_PER_GRAM_PROTEIN: f64 = 4.0;
+const CALORIES_PER_GRAM_CARBS: f64 = 4.0;
+const CALORIES_PER_GRAM_FAT: f64 = 9.0;
+
 #[component]
 fn Settings() -> impl IntoView {
+    // Daily calorie goal
+    let (daily_calories, set_daily_calories) = signal(2000_i32);
+
+    // Macro distribution (must sum to 100)
+    let (protein_pct, set_protein_pct) = signal(30_i32);
+    let (carbs_pct, set_carbs_pct) = signal(40_i32);
+    let (fat_pct, set_fat_pct) = signal(30_i32);
+
+    // Computed macro total
+    let macro_total = Memo::new(move |_| protein_pct.get() + carbs_pct.get() + fat_pct.get());
+
+    // Computed grams for each macro
+    let protein_grams = Memo::new(move |_| {
+        let cals = daily_calories.get() as f64;
+        let pct = protein_pct.get() as f64 / 100.0;
+        (cals * pct / CALORIES_PER_GRAM_PROTEIN).round() as i32
+    });
+    let carbs_grams = Memo::new(move |_| {
+        let cals = daily_calories.get() as f64;
+        let pct = carbs_pct.get() as f64 / 100.0;
+        (cals * pct / CALORIES_PER_GRAM_CARBS).round() as i32
+    });
+    let fat_grams = Memo::new(move |_| {
+        let cals = daily_calories.get() as f64;
+        let pct = fat_pct.get() as f64 / 100.0;
+        (cals * pct / CALORIES_PER_GRAM_FAT).round() as i32
+    });
+
+    // Salt/Sodium: use_sodium_unit = true means display as sodium (mg), false means salt (g)
+    let (use_sodium_unit, set_use_sodium_unit) = signal(true);
+    // Store internally as sodium in mg
+    let (sodium_mg, set_sodium_mg) = signal(2300_i32);
+
+    // Computed salt in grams (for display when using salt unit)
+    let salt_grams = Memo::new(move |_| {
+        // 2300mg sodium ≈ 5.84g salt; we use: salt_g = sodium_mg / 393.4
+        (sodium_mg.get() as f64 / 393.4 * 10.0).round() / 10.0
+    });
+
+    // Saturated fat: store as grams, compute percentage
+    let (sat_fat_grams, set_sat_fat_grams) = signal(20_i32);
+    let sat_fat_pct = Memo::new(move |_| {
+        let cals = daily_calories.get() as f64;
+        if cals <= 0.0 {
+            return 0.0;
+        }
+        let fat_cals = sat_fat_grams.get() as f64 * CALORIES_PER_GRAM_FAT;
+        (fat_cals / cals * 100.0 * 10.0).round() / 10.0
+    });
+
+    // Fiber minimum
+    let (fiber_min, set_fiber_min) = signal(25_i32);
+
+    // Preset loader
+    let load_preset = move |preset: &str| {
+        match preset {
+            "usda" => {
+                // dietaryguidelines.gov (USDA) - 2000 cal, 10-35% protein, 45-65% carbs, 20-35% fat
+                // Using middle-ground values; sodium 2300mg, sat fat <10%, fiber 28g
+                set_daily_calories.set(2000);
+                set_protein_pct.set(20);
+                set_carbs_pct.set(55);
+                set_fat_pct.set(25);
+                set_sodium_mg.set(2300);
+                set_sat_fat_grams.set(22); // ~10% of 2000 cal
+                set_fiber_min.set(28);
+            }
+            "aha" => {
+                // AHA (American Heart Association) - focuses on heart health
+                // 2000 cal, lower sat fat (<6%), sodium <2300mg (ideally 1500mg), fiber 25-30g
+                set_daily_calories.set(2000);
+                set_protein_pct.set(25);
+                set_carbs_pct.set(50);
+                set_fat_pct.set(25);
+                set_sodium_mg.set(1500);
+                set_sat_fat_grams.set(13); // ~6% of 2000 cal
+                set_fiber_min.set(30);
+            }
+            "nhs" => {
+                // NHS (UK) - 2000 cal for women, 2500 for men; using 2000
+                // Sat fat <11%, salt <6g (~2360mg sodium), fiber 30g
+                set_daily_calories.set(2000);
+                set_protein_pct.set(20);
+                set_carbs_pct.set(50);
+                set_fat_pct.set(30);
+                set_sodium_mg.set(2360);
+                set_sat_fat_grams.set(24); // ~11% of 2000 cal
+                set_fiber_min.set(30);
+            }
+            _ => {}
+        }
+    };
+
     view! {
         <div class="mx-auto max-w-4xl py-6">
             <h2 class="mb-6 text-3xl font-bold text-slate-900">"Settings"</h2>
-            
+
+            // Preset buttons
+            <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
+                <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
+                <div class="flex flex-wrap gap-3">
+                    <button
+                        class="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        on:click=move |_| load_preset("usda")
+                    >
+                        "USDA Dietary Guidelines"
+                    </button>
+                    <button
+                        class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        on:click=move |_| load_preset("aha")
+                    >
+                        "AHA Guidelines"
+                    </button>
+                    <button
+                        class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                        on:click=move |_| load_preset("nhs")
+                    >
+                        "NHS Guidelines"
+                    </button>
+                </div>
+            </div>
+
             <div class="space-y-6">
+                // Daily Goals
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Meal"</label>
-                            <input 
-                                type="number" 
-                                value="600" 
+                            <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Day"</label>
+                            <input
+                                type="number"
+                                prop:value=move || daily_calories.get()
+                                on:input=move |ev| {
+                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                        set_daily_calories.set(val.max(0));
+                                    }
+                                }
                                 class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
-                            <p class="mt-1 text-xs text-slate-500">"Your target calorie intake per meal"</p>
+                            <p class="mt-1 text-xs text-slate-500">"Your target calorie intake per day"</p>
                         </div>
                     </div>
                 </div>
 
+                // Macro Distribution
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
+
+                    // Validation message
+                    <div class="mb-4">
+                        {move || {
+                            let total = macro_total.get();
+                            if total == 100 {
+                                view! {
+                                    <div class="rounded bg-green-100 px-3 py-2 text-sm text-green-800">
+                                        "Total: 100% - Distribution is valid"
+                                    </div>
+                                }.into_any()
+                            } else {
+                                view! {
+                                    <div class="rounded bg-red-100 px-3 py-2 text-sm text-red-800">
+                                        {format!("Total: {}% - Must equal 100%", total)}
+                                    </div>
+                                }.into_any()
+                            }
+                        }}
+                    </div>
+
                     <div class="space-y-4">
+                        // Protein
                         <div>
                             <div class="mb-2 flex items-center justify-between">
                                 <label class="text-sm font-medium text-slate-700">"Protein"</label>
-                                <span class="text-sm font-semibold text-blue-600">"30%"</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-blue-600">{move || format!("{}%", protein_pct.get())}</span>
+                                    <span class="text-xs text-slate-500">{move || format!("({}g)", protein_grams.get())}</span>
+                                </div>
                             </div>
-                            <input 
-                                type="range" 
-                                min="10" 
-                                max="50" 
-                                value="30" 
+                            <input
+                                type="range"
+                                min="5"
+                                max="60"
+                                prop:value=move || protein_pct.get()
+                                on:input=move |ev| {
+                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                        set_protein_pct.set(val);
+                                    }
+                                }
                                 class="w-full"
                             />
                         </div>
+
+                        // Carbohydrates
                         <div>
                             <div class="mb-2 flex items-center justify-between">
                                 <label class="text-sm font-medium text-slate-700">"Carbohydrates"</label>
-                                <span class="text-sm font-semibold text-green-600">"40%"</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-green-600">{move || format!("{}%", carbs_pct.get())}</span>
+                                    <span class="text-xs text-slate-500">{move || format!("({}g)", carbs_grams.get())}</span>
+                                </div>
                             </div>
-                            <input 
-                                type="range" 
-                                min="10" 
-                                max="60" 
-                                value="40" 
+                            <input
+                                type="range"
+                                min="5"
+                                max="70"
+                                prop:value=move || carbs_pct.get()
+                                on:input=move |ev| {
+                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                        set_carbs_pct.set(val);
+                                    }
+                                }
                                 class="w-full"
                             />
                         </div>
+
+                        // Fat
                         <div>
                             <div class="mb-2 flex items-center justify-between">
                                 <label class="text-sm font-medium text-slate-700">"Fat"</label>
-                                <span class="text-sm font-semibold text-orange-600">"30%"</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-orange-600">{move || format!("{}%", fat_pct.get())}</span>
+                                    <span class="text-xs text-slate-500">{move || format!("({}g)", fat_grams.get())}</span>
+                                </div>
                             </div>
-                            <input 
-                                type="range" 
-                                min="10" 
-                                max="50" 
-                                value="30" 
+                            <input
+                                type="range"
+                                min="5"
+                                max="60"
+                                prop:value=move || fat_pct.get()
+                                on:input=move |ev| {
+                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                        set_fat_pct.set(val);
+                                    }
+                                }
                                 class="w-full"
                             />
                         </div>
                     </div>
                 </div>
 
+                // Daily Limits
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
                     <div class="space-y-4">
+                        // Salt/Sodium with toggle
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Salt Limit (mg)"</label>
-                            <input 
-                                type="number" 
-                                value="2300" 
-                                class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <p class="mt-1 text-xs text-slate-500">"Recommended: 2300mg (about 1 teaspoon)"</p>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label class="block text-sm font-medium text-slate-700">
+                                    {move || if use_sodium_unit.get() { "Daily Sodium Limit (mg)" } else { "Daily Salt Limit (g)" }}
+                                </label>
+                                <button
+                                    class="rounded bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-300"
+                                    on:click=move |_| set_use_sodium_unit.set(!use_sodium_unit.get())
+                                >
+                                    {move || if use_sodium_unit.get() { "Switch to Salt (g)" } else { "Switch to Sodium (mg)" }}
+                                </button>
+                            </div>
+                            {move || {
+                                if use_sodium_unit.get() {
+                                    view! {
+                                        <input
+                                            type="number"
+                                            prop:value=move || sodium_mg.get()
+                                            on:input=move |ev| {
+                                                if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                                    set_sodium_mg.set(val.max(0));
+                                                }
+                                            }
+                                            class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    }.into_any()
+                                } else {
+                                    view! {
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            prop:value=move || salt_grams.get()
+                                            on:input=move |ev| {
+                                                if let Ok(val) = event_target_value(&ev).parse::<f64>() {
+                                                    // Convert salt grams back to sodium mg
+                                                    let sodium = (val * 393.4).round() as i32;
+                                                    set_sodium_mg.set(sodium.max(0));
+                                                }
+                                            }
+                                            class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    }.into_any()
+                                }
+                            }}
+                            <p class="mt-1 text-xs text-slate-500">
+                                {move || if use_sodium_unit.get() {
+                                    format!("Equivalent to {:.1}g salt. Recommended: 2300mg (US) / 2360mg (UK)", salt_grams.get())
+                                } else {
+                                    format!("Equivalent to {}mg sodium. Recommended: ~5-6g salt per day", sodium_mg.get())
+                                }}
+                            </p>
                         </div>
+
+                        // Saturated Fat with dual inputs (grams and percentage)
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Saturated Fat Limit (g)"</label>
-                            <input 
-                                type="number" 
-                                value="20" 
+                            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Saturated Fat Limit"</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
+                                    <input
+                                        type="number"
+                                        prop:value=move || sat_fat_grams.get()
+                                        on:input=move |ev| {
+                                            if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                                set_sat_fat_grams.set(val.max(0));
+                                            }
+                                        }
+                                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs text-slate-500">"% of Daily Calories"</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        prop:value=move || sat_fat_pct.get()
+                                        on:input=move |ev| {
+                                            if let Ok(pct) = event_target_value(&ev).parse::<f64>() {
+                                                // Convert percentage to grams
+                                                let cals = daily_calories.get() as f64;
+                                                let grams = (pct / 100.0 * cals / CALORIES_PER_GRAM_FAT).round() as i32;
+                                                set_sat_fat_grams.set(grams.max(0));
+                                            }
+                                        }
+                                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-500">"Recommended: Less than 10% of daily calories (AHA recommends <6% for heart health)"</p>
+                        </div>
+                    </div>
+                </div>
+
+                // Daily Minimums
+                <div class="rounded-lg bg-white p-6 shadow-md">
+                    <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Minimums"</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">"Minimum Fiber Intake (g)"</label>
+                            <input
+                                type="number"
+                                prop:value=move || fiber_min.get()
+                                on:input=move |ev| {
+                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                        set_fiber_min.set(val.max(0));
+                                    }
+                                }
                                 class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
-                            <p class="mt-1 text-xs text-slate-500">"Recommended: Less than 10% of daily calories"</p>
+                            <p class="mt-1 text-xs text-slate-500">"Recommended: 25-30g per day for adults"</p>
                         </div>
                     </div>
                 </div>
