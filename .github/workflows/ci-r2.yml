@@ -18,14 +18,6 @@ jobs:
     - name: Install Determinate Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Free up disk space
-      run: |
-        # Remove unnecessary software to free up space
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        df -h
-
     - name: Configure Nix daemon for R2 cache with post-build hook
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -34,70 +26,43 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         R2_ENDPOINT="${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
-        # Create AWS credentials file for the daemon (runs as root)
-        sudo mkdir -p /root/.aws
-        sudo tee /root/.aws/credentials > /dev/null << EOF
-        [default]
-        aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-        aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-        EOF
-        sudo chmod 600 /root/.aws/credentials
 
-        # Create the signing key file
-        sudo tee /etc/nix/cache-priv-key.pem > /dev/null << EOF
-        ${NIX_SECRET_KEY}
-        EOF
-        sudo chmod 600 /etc/nix/cache-priv-key.pem
+        # Create the signing key file (readable by all since nix copy runs as runner user)
+        sudo tee /etc/nix/cache-priv-key.pem > /dev/null <<< "${NIX_SECRET_KEY}"
+        sudo chmod 644 /etc/nix/cache-priv-key.pem
 
         # Create the post-build hook script
         # This script is called after EVERY derivation is built (not substituted)
         # It receives OUT_PATHS (space-separated list of output paths)
-        # Note: Using heredoc without quotes to expand variables directly into the script
-        sudo tee /etc/nix/post-build-hook.sh > /dev/null << HOOK_EOF
-        #!/bin/bash
-        set -eu
-        set -o pipefail
-
-        # OUT_PATHS contains space-separated store paths that were just built
-        # Upload each path to the R2 cache
-        echo "Uploading paths to R2 cache: \$OUT_PATHS"
-        exec nix copy --to "s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd" \$OUT_PATHS
-        HOOK_EOF
+        # Note: Must use full path to nix since PATH is not set in hook environment
+        printf '%s\n' \
+          '#!/bin/bash' \
+          'set -eu' \
+          'set -o pipefail' \
+          '' \
+          "export AWS_ACCESS_KEY_ID=\"${AWS_ACCESS_KEY_ID}\"" \
+          "export AWS_SECRET_ACCESS_KEY=\"${AWS_SECRET_ACCESS_KEY}\"" \
+          '' \
+          'echo "Uploading to R2: $OUT_PATHS"' \
+          "exec /nix/var/nix/profiles/default/bin/nix copy --to \"s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}&secret-key=/etc/nix/cache-priv-key.pem&compression=zstd\" \$OUT_PATHS" \
+          | sudo tee /etc/nix/post-build-hook.sh > /dev/null
         sudo chmod +x /etc/nix/post-build-hook.sh
 
         # Configure nix with substituter and post-build-hook
-        S3_SUBSTITUTER="s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}"
-        sudo tee -a /etc/nix/nix.conf > /dev/null << EOF
-
-        # R2 cache configuration
-        extra-substituters = ${S3_SUBSTITUTER}
+        # Determinate Nix uses nix.custom.conf for user customizations (it rewrites nix.conf on restart)
+        sudo tee /etc/nix/nix.custom.conf > /dev/null << EOF
+        extra-substituters = s3://${{ env.R2_BUCKET }}?endpoint=${R2_ENDPOINT}
         extra-trusted-public-keys = ${{ env.NIX_CACHE_PUBLIC_KEY }}
-
-        # Post-build hook uploads every built derivation to R2
-        # This includes intermediate derivations like cargo dependency caches
         post-build-hook = /etc/nix/post-build-hook.sh
         EOF
 
         # Restart nix-daemon to pick up new configuration
         sudo systemctl restart nix-daemon
 
-        echo "=== Nix configuration ==="
-        cat /etc/nix/nix.conf
-        echo ""
-        echo "=== Post-build hook ==="
-        cat /etc/nix/post-build-hook.sh
-
     - name: Build e2e-tests package
-      run: |
-        # Build the e2e-tests package
-        # The post-build hook automatically uploads every derivation as it's built,
-        # including intermediate ones like clientArtifacts, workerArtifacts, etc.
-        nix build .#e2e-tests --no-link
+      run: nix build .#e2e-tests --no-link
       timeout-minutes: 30
 
     - name: Run e2e tests
-      run: |
-        # This also builds the app wrapper and its runtime deps (wrangler, geckodriver, website)
-        # The post-build hook will upload those as well
-        nix run .#e2e-tests
+      run: nix run .#e2e-tests
       timeout-minutes: 20
