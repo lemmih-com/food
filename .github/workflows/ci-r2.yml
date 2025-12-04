@@ -53,10 +53,15 @@ jobs:
         # This script is called after EVERY derivation is built (not substituted)
         # It receives OUT_PATHS (space-separated list of output paths)
         # Note: Using heredoc without quotes to expand variables directly into the script
+        # We embed AWS credentials directly since the daemon runs in a different environment
         sudo tee /etc/nix/post-build-hook.sh > /dev/null << HOOK_EOF
         #!/bin/bash
         set -eu
         set -o pipefail
+
+        # Set AWS credentials for R2 access
+        export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+        export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
 
         # OUT_PATHS contains space-separated store paths that were just built
         # Upload each path to the R2 cache
