@@ -300,6 +300,29 @@
         };
       };
 
+      apps.deploy-production = flake-utils.lib.mkApp {
+        drv = pkgs.writeShellApplication {
+          name = "deploy-production";
+          runtimeInputs = with pkgs; [wranglerPkg];
+          text = ''
+            # Check for required environment variables
+            if [ -z "''${CLOUDFLARE_API_TOKEN:-}" ]; then
+              echo "Error: CLOUDFLARE_API_TOKEN environment variable is required"
+              exit 1
+            fi
+            if [ -z "''${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "Error: CLOUDFLARE_ACCOUNT_ID environment variable is required"
+              exit 1
+            fi
+
+            echo "Deploying to production (food.lemmih.com)"
+
+            # Deploy using wrangler with default (production) environment
+            wrangler deploy
+          '';
+        };
+      };
+
       apps.deploy-preview = flake-utils.lib.mkApp {
         drv = pkgs.writeShellApplication {
           name = "deploy-preview";
