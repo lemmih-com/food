@@ -463,6 +463,65 @@ fn Settings() -> impl IntoView {
         (cals * pct / CALORIES_PER_GRAM_FAT).round() as i32
     });
 
+    // Function to update macro from grams input
+    let adjust_macros_from_grams = move |changed: Macro, grams: i32| {
+        let cals = daily_calories.get() as f64;
+        if cals <= 0.0 {
+            return;
+        }
+        let cal_per_gram = match changed {
+            Macro::Protein => CALORIES_PER_GRAM_PROTEIN,
+            Macro::Carbs => CALORIES_PER_GRAM_CARBS,
+            Macro::Fat => CALORIES_PER_GRAM_FAT,
+        };
+        let new_pct = ((grams as f64 * cal_per_gram / cals) * 100.0).round() as i32;
+        adjust_macros(changed, new_pct);
+    };
+
+    // Pie chart arc path calculation
+    let pie_chart_paths = Memo::new(move |_| {
+        let protein = protein_pct.get() as f64;
+        let carbs = carbs_pct.get() as f64;
+        let fat = fat_pct.get() as f64;
+
+        // Center and radius for the pie chart
+        let cx = 60.0_f64;
+        let cy = 60.0_f64;
+        let r = 50.0_f64;
+
+        // Calculate angles (in radians, starting from top)
+        let protein_angle = protein / 100.0 * 2.0 * std::f64::consts::PI;
+        let carbs_angle = carbs / 100.0 * 2.0 * std::f64::consts::PI;
+        let fat_angle = fat / 100.0 * 2.0 * std::f64::consts::PI;
+
+        // Starting angle (top of circle = -PI/2)
+        let start = -std::f64::consts::PI / 2.0;
+
+        // Helper to create arc path
+        let arc_path = |start_angle: f64, end_angle: f64| -> String {
+            let x1 = cx + r * start_angle.cos();
+            let y1 = cy + r * start_angle.sin();
+            let x2 = cx + r * end_angle.cos();
+            let y2 = cy + r * end_angle.sin();
+            let large_arc = if (end_angle - start_angle).abs() > std::f64::consts::PI {
+                1
+            } else {
+                0
+            };
+            format!("M {cx} {cy} L {x1} {y1} A {r} {r} 0 {large_arc} 1 {x2} {y2} Z")
+        };
+
+        let protein_end = start + protein_angle;
+        let carbs_end = protein_end + carbs_angle;
+        let fat_end = carbs_end + fat_angle;
+
+        (
+            arc_path(start, protein_end),
+            arc_path(protein_end, carbs_end),
+            arc_path(carbs_end, fat_end),
+        )
+    });
+
     // Salt/Sodium: use_sodium_unit = true means display as sodium (mg), false means salt (g)
     let (use_sodium_unit, set_use_sodium_unit) = signal(true);
     // Store internally as sodium in mg
@@ -583,124 +642,190 @@ fn Settings() -> impl IntoView {
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
 
-                    // Info message
-                    <div class="mb-4 rounded bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                        "Total: 100% - Lock a macro to prevent it from auto-adjusting"
-                    </div>
-
-                    <div class="space-y-4">
-                        // Protein
-                        <div>
-                            <div class="mb-2 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
-                                        title=move || if locked_macro.get() == Some(Macro::Protein) { "Click to unlock" } else { "Click to lock" }
-                                        on:click=move |_| {
-                                            if locked_macro.get() == Some(Macro::Protein) {
-                                                set_locked_macro.set(None);
-                                            } else {
-                                                set_locked_macro.set(Some(Macro::Protein));
-                                            }
-                                        }
-                                    >
-                                        {move || if locked_macro.get() == Some(Macro::Protein) { "🔒" } else { "🔓" }}
-                                    </button>
-                                    <label class="text-sm font-medium text-slate-700">"Protein"</label>
+                    <div class="flex flex-col md:flex-row gap-6">
+                        // Pie Chart
+                        <div class="flex-shrink-0 flex flex-col items-center">
+                            <svg width="120" height="120" viewBox="0 0 120 120">
+                                // Protein slice (blue)
+                                <path
+                                    d=move || pie_chart_paths.get().0
+                                    fill="#2563eb"
+                                />
+                                // Carbs slice (green)
+                                <path
+                                    d=move || pie_chart_paths.get().1
+                                    fill="#16a34a"
+                                />
+                                // Fat slice (orange)
+                                <path
+                                    d=move || pie_chart_paths.get().2
+                                    fill="#ea580c"
+                                />
+                            </svg>
+                            // Legend
+                            <div class="mt-2 flex gap-3 text-xs">
+                                <div class="flex items-center gap-1">
+                                    <div class="h-3 w-3 rounded-sm bg-blue-600"></div>
+                                    <span>"Protein"</span>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-blue-600">{move || format!("{}%", protein_pct.get())}</span>
-                                    <span class="text-xs text-slate-500">{move || format!("({}g)", protein_grams.get())}</span>
+                                <div class="flex items-center gap-1">
+                                    <div class="h-3 w-3 rounded-sm bg-green-600"></div>
+                                    <span>"Carbs"</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="h-3 w-3 rounded-sm bg-orange-600"></div>
+                                    <span>"Fat"</span>
                                 </div>
                             </div>
-                            <input
-                                type="range"
-                                min="5"
-                                max="90"
-                                prop:value=move || protein_pct.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        adjust_macros(Macro::Protein, val);
-                                    }
-                                }
-                                class="w-full"
-                            />
                         </div>
 
-                        // Carbohydrates
-                        <div>
-                            <div class="mb-2 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
-                                        title=move || if locked_macro.get() == Some(Macro::Carbs) { "Click to unlock" } else { "Click to lock" }
-                                        on:click=move |_| {
-                                            if locked_macro.get() == Some(Macro::Carbs) {
-                                                set_locked_macro.set(None);
-                                            } else {
-                                                set_locked_macro.set(Some(Macro::Carbs));
-                                            }
-                                        }
-                                    >
-                                        {move || if locked_macro.get() == Some(Macro::Carbs) { "🔒" } else { "🔓" }}
-                                    </button>
-                                    <label class="text-sm font-medium text-slate-700">"Carbohydrates"</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-green-600">{move || format!("{}%", carbs_pct.get())}</span>
-                                    <span class="text-xs text-slate-500">{move || format!("({}g)", carbs_grams.get())}</span>
-                                </div>
+                        // Macro inputs
+                        <div class="flex-1 space-y-3">
+                            // Info message
+                            <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                                "Lock a macro to prevent it from auto-adjusting when others change"
                             </div>
-                            <input
-                                type="range"
-                                min="5"
-                                max="90"
-                                prop:value=move || carbs_pct.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        adjust_macros(Macro::Carbs, val);
-                                    }
-                                }
-                                class="w-full"
-                            />
-                        </div>
 
-                        // Fat
-                        <div>
-                            <div class="mb-2 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
-                                        title=move || if locked_macro.get() == Some(Macro::Fat) { "Click to unlock" } else { "Click to lock" }
-                                        on:click=move |_| {
-                                            if locked_macro.get() == Some(Macro::Fat) {
-                                                set_locked_macro.set(None);
-                                            } else {
-                                                set_locked_macro.set(Some(Macro::Fat));
-                                            }
+                            // Protein row
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
+                                    class=("border-blue-500", move || locked_macro.get() == Some(Macro::Protein))
+                                    class=("bg-blue-50", move || locked_macro.get() == Some(Macro::Protein))
+                                    class=("border-slate-300", move || locked_macro.get() != Some(Macro::Protein))
+                                    title=move || if locked_macro.get() == Some(Macro::Protein) { "Click to unlock" } else { "Click to lock" }
+                                    on:click=move |_| {
+                                        if locked_macro.get() == Some(Macro::Protein) {
+                                            set_locked_macro.set(None);
+                                        } else {
+                                            set_locked_macro.set(Some(Macro::Protein));
                                         }
-                                    >
-                                        {move || if locked_macro.get() == Some(Macro::Fat) { "🔒" } else { "🔓" }}
-                                    </button>
-                                    <label class="text-sm font-medium text-slate-700">"Fat"</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-orange-600">{move || format!("{}%", fat_pct.get())}</span>
-                                    <span class="text-xs text-slate-500">{move || format!("({}g)", fat_grams.get())}</span>
-                                </div>
-                            </div>
-                            <input
-                                type="range"
-                                min="5"
-                                max="90"
-                                prop:value=move || fat_pct.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        adjust_macros(Macro::Fat, val);
                                     }
-                                }
-                                class="w-full"
-                            />
+                                >
+                                    {move || if locked_macro.get() == Some(Macro::Protein) { "🔒" } else { "🔓" }}
+                                </button>
+                                <div class="h-3 w-3 rounded-sm bg-blue-600"></div>
+                                <span class="w-24 text-sm font-medium text-slate-700">"Protein"</span>
+                                <input
+                                    type="number"
+                                    min="5"
+                                    max="90"
+                                    prop:value=move || protein_pct.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros(Macro::Protein, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"%"</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    prop:value=move || protein_grams.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros_from_grams(Macro::Protein, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"g"</span>
+                            </div>
+
+                            // Carbohydrates row
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
+                                    class=("border-green-500", move || locked_macro.get() == Some(Macro::Carbs))
+                                    class=("bg-green-50", move || locked_macro.get() == Some(Macro::Carbs))
+                                    class=("border-slate-300", move || locked_macro.get() != Some(Macro::Carbs))
+                                    title=move || if locked_macro.get() == Some(Macro::Carbs) { "Click to unlock" } else { "Click to lock" }
+                                    on:click=move |_| {
+                                        if locked_macro.get() == Some(Macro::Carbs) {
+                                            set_locked_macro.set(None);
+                                        } else {
+                                            set_locked_macro.set(Some(Macro::Carbs));
+                                        }
+                                    }
+                                >
+                                    {move || if locked_macro.get() == Some(Macro::Carbs) { "🔒" } else { "🔓" }}
+                                </button>
+                                <div class="h-3 w-3 rounded-sm bg-green-600"></div>
+                                <span class="w-24 text-sm font-medium text-slate-700">"Carbs"</span>
+                                <input
+                                    type="number"
+                                    min="5"
+                                    max="90"
+                                    prop:value=move || carbs_pct.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros(Macro::Carbs, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"%"</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    prop:value=move || carbs_grams.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros_from_grams(Macro::Carbs, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"g"</span>
+                            </div>
+
+                            // Fat row
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
+                                    class=("border-orange-500", move || locked_macro.get() == Some(Macro::Fat))
+                                    class=("bg-orange-50", move || locked_macro.get() == Some(Macro::Fat))
+                                    class=("border-slate-300", move || locked_macro.get() != Some(Macro::Fat))
+                                    title=move || if locked_macro.get() == Some(Macro::Fat) { "Click to unlock" } else { "Click to lock" }
+                                    on:click=move |_| {
+                                        if locked_macro.get() == Some(Macro::Fat) {
+                                            set_locked_macro.set(None);
+                                        } else {
+                                            set_locked_macro.set(Some(Macro::Fat));
+                                        }
+                                    }
+                                >
+                                    {move || if locked_macro.get() == Some(Macro::Fat) { "🔒" } else { "🔓" }}
+                                </button>
+                                <div class="h-3 w-3 rounded-sm bg-orange-600"></div>
+                                <span class="w-24 text-sm font-medium text-slate-700">"Fat"</span>
+                                <input
+                                    type="number"
+                                    min="5"
+                                    max="90"
+                                    prop:value=move || fat_pct.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros(Macro::Fat, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"%"</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    prop:value=move || fat_grams.get()
+                                    on:input=move |ev| {
+                                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                            adjust_macros_from_grams(Macro::Fat, val);
+                                        }
+                                    }
+                                    class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+                                />
+                                <span class="text-sm text-slate-500">"g"</span>
+                            </div>
                         </div>
                     </div>
                 </div>
