@@ -289,6 +289,14 @@ const CALORIES_PER_GRAM_PROTEIN: f64 = 4.0;
 const CALORIES_PER_GRAM_CARBS: f64 = 4.0;
 const CALORIES_PER_GRAM_FAT: f64 = 9.0;
 
+// Macro types for locking
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Macro {
+    Protein,
+    Carbs,
+    Fat,
+}
+
 #[component]
 fn Settings() -> impl IntoView {
     // Daily calorie goal
@@ -299,8 +307,142 @@ fn Settings() -> impl IntoView {
     let (carbs_pct, set_carbs_pct) = signal(40_i32);
     let (fat_pct, set_fat_pct) = signal(30_i32);
 
-    // Computed macro total
-    let macro_total = Memo::new(move |_| protein_pct.get() + carbs_pct.get() + fat_pct.get());
+    // Which macro is locked (only one can be locked at a time)
+    let (locked_macro, set_locked_macro) = signal(Option::<Macro>::None);
+
+    // Function to adjust macros when one changes, keeping total at 100%
+    // The changed macro and any locked macro are preserved; the third adjusts
+    let adjust_macros = move |changed: Macro, new_value: i32| {
+        let new_value = new_value.clamp(5, 90); // Ensure reasonable bounds
+        let locked = locked_macro.get();
+
+        // Unlock the macro being changed
+        if locked == Some(changed) {
+            set_locked_macro.set(None);
+        }
+        let locked = if locked == Some(changed) {
+            None
+        } else {
+            locked
+        };
+
+        let (current_protein, current_carbs, current_fat) =
+            (protein_pct.get(), carbs_pct.get(), fat_pct.get());
+
+        match changed {
+            Macro::Protein => {
+                let remaining = 100 - new_value;
+                match locked {
+                    Some(Macro::Carbs) => {
+                        // Carbs locked, adjust fat
+                        let new_fat = (remaining - current_carbs).clamp(5, 90);
+                        let new_carbs = remaining - new_fat;
+                        set_protein_pct.set(new_value);
+                        set_carbs_pct.set(new_carbs);
+                        set_fat_pct.set(new_fat);
+                    }
+                    Some(Macro::Fat) => {
+                        // Fat locked, adjust carbs
+                        let new_carbs = (remaining - current_fat).clamp(5, 90);
+                        let new_fat = remaining - new_carbs;
+                        set_protein_pct.set(new_value);
+                        set_carbs_pct.set(new_carbs);
+                        set_fat_pct.set(new_fat);
+                    }
+                    _ => {
+                        // No lock or protein was locked (now unlocked), distribute to carbs and fat proportionally
+                        let old_other_total = current_carbs + current_fat;
+                        if old_other_total > 0 {
+                            let carbs_ratio = current_carbs as f64 / old_other_total as f64;
+                            let new_carbs = (remaining as f64 * carbs_ratio).round() as i32;
+                            let new_fat = remaining - new_carbs;
+                            set_protein_pct.set(new_value);
+                            set_carbs_pct.set(new_carbs.clamp(5, 90));
+                            set_fat_pct.set(new_fat.clamp(5, 90));
+                        } else {
+                            set_protein_pct.set(new_value);
+                            set_carbs_pct.set(remaining / 2);
+                            set_fat_pct.set(remaining - remaining / 2);
+                        }
+                    }
+                }
+            }
+            Macro::Carbs => {
+                let remaining = 100 - new_value;
+                match locked {
+                    Some(Macro::Protein) => {
+                        // Protein locked, adjust fat
+                        let new_fat = (remaining - current_protein).clamp(5, 90);
+                        let new_protein = remaining - new_fat;
+                        set_protein_pct.set(new_protein);
+                        set_carbs_pct.set(new_value);
+                        set_fat_pct.set(new_fat);
+                    }
+                    Some(Macro::Fat) => {
+                        // Fat locked, adjust protein
+                        let new_protein = (remaining - current_fat).clamp(5, 90);
+                        let new_fat = remaining - new_protein;
+                        set_protein_pct.set(new_protein);
+                        set_carbs_pct.set(new_value);
+                        set_fat_pct.set(new_fat);
+                    }
+                    _ => {
+                        // No lock, distribute to protein and fat proportionally
+                        let old_other_total = current_protein + current_fat;
+                        if old_other_total > 0 {
+                            let protein_ratio = current_protein as f64 / old_other_total as f64;
+                            let new_protein = (remaining as f64 * protein_ratio).round() as i32;
+                            let new_fat = remaining - new_protein;
+                            set_protein_pct.set(new_protein.clamp(5, 90));
+                            set_carbs_pct.set(new_value);
+                            set_fat_pct.set(new_fat.clamp(5, 90));
+                        } else {
+                            set_protein_pct.set(remaining / 2);
+                            set_carbs_pct.set(new_value);
+                            set_fat_pct.set(remaining - remaining / 2);
+                        }
+                    }
+                }
+            }
+            Macro::Fat => {
+                let remaining = 100 - new_value;
+                match locked {
+                    Some(Macro::Protein) => {
+                        // Protein locked, adjust carbs
+                        let new_carbs = (remaining - current_protein).clamp(5, 90);
+                        let new_protein = remaining - new_carbs;
+                        set_protein_pct.set(new_protein);
+                        set_carbs_pct.set(new_carbs);
+                        set_fat_pct.set(new_value);
+                    }
+                    Some(Macro::Carbs) => {
+                        // Carbs locked, adjust protein
+                        let new_protein = (remaining - current_carbs).clamp(5, 90);
+                        let new_carbs = remaining - new_protein;
+                        set_protein_pct.set(new_protein);
+                        set_carbs_pct.set(new_carbs);
+                        set_fat_pct.set(new_value);
+                    }
+                    _ => {
+                        // No lock, distribute to protein and carbs proportionally
+                        let old_other_total = current_protein + current_carbs;
+                        if old_other_total > 0 {
+                            let protein_ratio = current_protein as f64 / old_other_total as f64;
+                            let new_protein = (remaining as f64 * protein_ratio).round() as i32;
+                            let new_carbs = remaining - new_protein;
+                            set_protein_pct.set(new_protein.clamp(5, 90));
+                            set_carbs_pct.set(new_carbs.clamp(5, 90));
+                            set_fat_pct.set(new_value);
+                        } else {
+                            set_protein_pct.set(remaining / 2);
+                            set_carbs_pct.set(remaining - remaining / 2);
+                            set_fat_pct.set(new_value);
+                        }
+                    }
+                }
+            }
+        }
+    };
 
     // Computed grams for each macro
     let protein_grams = Memo::new(move |_| {
@@ -439,31 +581,31 @@ fn Settings() -> impl IntoView {
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
 
-                    // Validation message
-                    <div class="mb-4">
-                        {move || {
-                            let total = macro_total.get();
-                            if total == 100 {
-                                view! {
-                                    <div class="rounded bg-green-100 px-3 py-2 text-sm text-green-800">
-                                        "Total: 100% - Distribution is valid"
-                                    </div>
-                                }.into_any()
-                            } else {
-                                view! {
-                                    <div class="rounded bg-red-100 px-3 py-2 text-sm text-red-800">
-                                        {format!("Total: {}% - Must equal 100%", total)}
-                                    </div>
-                                }.into_any()
-                            }
-                        }}
+                    // Info message
+                    <div class="mb-4 rounded bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                        "Total: 100% - Lock a macro to prevent it from auto-adjusting"
                     </div>
 
                     <div class="space-y-4">
                         // Protein
                         <div>
                             <div class="mb-2 flex items-center justify-between">
-                                <label class="text-sm font-medium text-slate-700">"Protein"</label>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
+                                        title=move || if locked_macro.get() == Some(Macro::Protein) { "Click to unlock" } else { "Click to lock" }
+                                        on:click=move |_| {
+                                            if locked_macro.get() == Some(Macro::Protein) {
+                                                set_locked_macro.set(None);
+                                            } else {
+                                                set_locked_macro.set(Some(Macro::Protein));
+                                            }
+                                        }
+                                    >
+                                        {move || if locked_macro.get() == Some(Macro::Protein) { "🔒" } else { "🔓" }}
+                                    </button>
+                                    <label class="text-sm font-medium text-slate-700">"Protein"</label>
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm font-semibold text-blue-600">{move || format!("{}%", protein_pct.get())}</span>
                                     <span class="text-xs text-slate-500">{move || format!("({}g)", protein_grams.get())}</span>
@@ -472,11 +614,11 @@ fn Settings() -> impl IntoView {
                             <input
                                 type="range"
                                 min="5"
-                                max="60"
+                                max="90"
                                 prop:value=move || protein_pct.get()
                                 on:input=move |ev| {
                                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        set_protein_pct.set(val);
+                                        adjust_macros(Macro::Protein, val);
                                     }
                                 }
                                 class="w-full"
@@ -486,7 +628,22 @@ fn Settings() -> impl IntoView {
                         // Carbohydrates
                         <div>
                             <div class="mb-2 flex items-center justify-between">
-                                <label class="text-sm font-medium text-slate-700">"Carbohydrates"</label>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
+                                        title=move || if locked_macro.get() == Some(Macro::Carbs) { "Click to unlock" } else { "Click to lock" }
+                                        on:click=move |_| {
+                                            if locked_macro.get() == Some(Macro::Carbs) {
+                                                set_locked_macro.set(None);
+                                            } else {
+                                                set_locked_macro.set(Some(Macro::Carbs));
+                                            }
+                                        }
+                                    >
+                                        {move || if locked_macro.get() == Some(Macro::Carbs) { "🔒" } else { "🔓" }}
+                                    </button>
+                                    <label class="text-sm font-medium text-slate-700">"Carbohydrates"</label>
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm font-semibold text-green-600">{move || format!("{}%", carbs_pct.get())}</span>
                                     <span class="text-xs text-slate-500">{move || format!("({}g)", carbs_grams.get())}</span>
@@ -495,11 +652,11 @@ fn Settings() -> impl IntoView {
                             <input
                                 type="range"
                                 min="5"
-                                max="70"
+                                max="90"
                                 prop:value=move || carbs_pct.get()
                                 on:input=move |ev| {
                                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        set_carbs_pct.set(val);
+                                        adjust_macros(Macro::Carbs, val);
                                     }
                                 }
                                 class="w-full"
@@ -509,7 +666,22 @@ fn Settings() -> impl IntoView {
                         // Fat
                         <div>
                             <div class="mb-2 flex items-center justify-between">
-                                <label class="text-sm font-medium text-slate-700">"Fat"</label>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        class="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-slate-100"
+                                        title=move || if locked_macro.get() == Some(Macro::Fat) { "Click to unlock" } else { "Click to lock" }
+                                        on:click=move |_| {
+                                            if locked_macro.get() == Some(Macro::Fat) {
+                                                set_locked_macro.set(None);
+                                            } else {
+                                                set_locked_macro.set(Some(Macro::Fat));
+                                            }
+                                        }
+                                    >
+                                        {move || if locked_macro.get() == Some(Macro::Fat) { "🔒" } else { "🔓" }}
+                                    </button>
+                                    <label class="text-sm font-medium text-slate-700">"Fat"</label>
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm font-semibold text-orange-600">{move || format!("{}%", fat_pct.get())}</span>
                                     <span class="text-xs text-slate-500">{move || format!("({}g)", fat_grams.get())}</span>
@@ -518,11 +690,11 @@ fn Settings() -> impl IntoView {
                             <input
                                 type="range"
                                 min="5"
-                                max="60"
+                                max="90"
                                 prop:value=move || fat_pct.get()
                                 on:input=move |ev| {
                                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        set_fat_pct.set(val);
+                                        adjust_macros(Macro::Fat, val);
                                     }
                                 }
                                 class="w-full"
