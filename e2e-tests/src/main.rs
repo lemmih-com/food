@@ -318,6 +318,103 @@ async fn test_css_is_valid_tailwind(runner: &TestRunner) -> Result<()> {
     Ok(())
 }
 
+/// Test: Macro distribution always sums to 100% after changing inputs
+async fn test_macro_distribution_sums_to_100(runner: &TestRunner) -> Result<()> {
+    // Navigate to settings page
+    let url = format!("{}/settings", runner.base_url);
+    runner.driver.goto(&url).await?;
+    tokio::time::sleep(Duration::from_millis(500)).await;
+
+    // Find macro percentage inputs (they are number inputs with min="5" max="90")
+    // The inputs are in order: protein %, protein g, carbs %, carbs g, fat %, fat g
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await
+        .context("Failed to find macro percentage inputs")?;
+
+    if inputs.len() != 3 {
+        anyhow::bail!("Expected 3 macro percentage inputs, found {}", inputs.len());
+    }
+
+    // Helper to get current macro percentages
+    async fn get_macro_sum(inputs: &[WebElement]) -> Result<i32> {
+        let mut sum = 0;
+        for input in inputs {
+            let value = input.prop("value").await?.unwrap_or_default();
+            let pct: i32 = value.parse().unwrap_or(0);
+            sum += pct;
+        }
+        Ok(sum)
+    }
+
+    // Check initial sum is 100%
+    let initial_sum = get_macro_sum(&inputs).await?;
+    if initial_sum != 100 {
+        anyhow::bail!(
+            "Initial macro distribution should sum to 100%, got {}%",
+            initial_sum
+        );
+    }
+
+    // Change protein to 50% and verify sum is still 100%
+    inputs[0].clear().await?;
+    inputs[0].send_keys("50").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    // Re-fetch inputs after the page updates
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_protein_change = get_macro_sum(&inputs).await?;
+    if sum_after_protein_change != 100 {
+        anyhow::bail!(
+            "After changing protein to 50%, macro sum should be 100%, got {}%",
+            sum_after_protein_change
+        );
+    }
+
+    // Change carbs to 30% and verify sum is still 100%
+    inputs[1].clear().await?;
+    inputs[1].send_keys("30").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_carbs_change = get_macro_sum(&inputs).await?;
+    if sum_after_carbs_change != 100 {
+        anyhow::bail!(
+            "After changing carbs to 30%, macro sum should be 100%, got {}%",
+            sum_after_carbs_change
+        );
+    }
+
+    // Change fat to 25% and verify sum is still 100%
+    inputs[2].clear().await?;
+    inputs[2].send_keys("25").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_fat_change = get_macro_sum(&inputs).await?;
+    if sum_after_fat_change != 100 {
+        anyhow::bail!(
+            "After changing fat to 25%, macro sum should be 100%, got {}%",
+            sum_after_fat_change
+        );
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // Test Runner
 // ============================================================================
@@ -360,6 +457,7 @@ async fn main() -> Result<()> {
         "CSS file is accessible" => test_css_file_accessible,
         "CSS contains Tailwind classes" => test_css_contains_tailwind_classes,
         "CSS is valid Tailwind output" => test_css_is_valid_tailwind,
+        "Macro distribution sums to 100%" => test_macro_distribution_sums_to_100,
     );
 
     // Explicitly quit WebDriver to avoid Tokio runtime shutdown panic
