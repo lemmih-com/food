@@ -22,3 +22,6 @@ target
 
 # Nix cache signing keys (private key must never be committed)
 cache-priv-key.pem
+
+# Nix build result symlink
+result
