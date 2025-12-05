@@ -112,7 +112,7 @@ impl IngredientCategory {
 }
 
 /// All nutrient values are per 100g
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct Ingredient {
     name: &'static str,
     category: IngredientCategory,
@@ -180,8 +180,8 @@ impl SortDirection {
     fn indicator(&self) -> &'static str {
         match self {
             SortDirection::None => "",
-            SortDirection::Ascending => " \u{2191}",
-            SortDirection::Descending => " \u{2193}",
+            SortDirection::Ascending => " \u{25B2}", // ▲
+            SortDirection::Descending => " \u{25BC}", // ▼
         }
     }
 }
@@ -504,117 +504,42 @@ fn get_ingredients() -> Vec<Ingredient> {
 }
 
 #[component]
-fn IngredientTable(
-    title: &'static str,
-    ingredients: Vec<Ingredient>,
-    view_mode: NutrientView,
-    sort_column: SortColumn,
-    sort_direction: SortDirection,
-    on_header_click: impl Fn(SortColumn) + Clone + 'static,
+fn SortableHeader(
+    col: SortColumn,
+    label: &'static str,
+    sort_column: ReadSignal<SortColumn>,
+    sort_direction: ReadSignal<SortDirection>,
+    on_click: impl Fn(SortColumn) + 'static,
 ) -> impl IntoView {
     let header_class = "px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none";
 
-    let make_header = {
-        let on_header_click = on_header_click.clone();
-        move |col: SortColumn, label: &'static str| {
-            let on_click = on_header_click.clone();
-            let indicator = if sort_column == col {
-                sort_direction.indicator()
-            } else {
-                ""
-            };
-            view! {
-                <th
-                    class=header_class
-                    on:click=move |_| on_click(col)
-                >
-                    {label}{indicator}
-                </th>
-            }
-        }
-    };
-
-    let is_per_calorie = view_mode == NutrientView::Per100kcal;
-    let unit_suffix = if is_per_calorie { "/100kcal" } else { "/100g" };
-
     view! {
-        <div class="mb-8">
-            <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
-            <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            {make_header(SortColumn::Name, "Ingredient")}
-                            {make_header(SortColumn::PackageSize, "Package")}
-                            {make_header(SortColumn::Price, "Price")}
-                            {make_header(SortColumn::Calories, "Calories")}
-                            {make_header(SortColumn::Protein, "Protein")}
-                            {make_header(SortColumn::Fat, "Fat")}
-                            {make_header(SortColumn::SaturatedFat, "Sat. Fat")}
-                            {make_header(SortColumn::Carbs, "Carbs")}
-                            {make_header(SortColumn::Sugar, "Sugar")}
-                            {make_header(SortColumn::Fiber, "Fiber")}
-                            {make_header(SortColumn::Salt, "Salt")}
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Store"</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200">
-                        {ingredients.into_iter().map(|ing| {
-                            let (cal, prot, fat, sat_fat, carbs, sugar, fiber, salt) = if is_per_calorie {
-                                (
-                                    100.0, // Always 100 kcal in per-calorie view
-                                    ing.per_calorie(ing.protein),
-                                    ing.per_calorie(ing.fat),
-                                    ing.per_calorie(ing.saturated_fat),
-                                    ing.per_calorie(ing.carbs),
-                                    ing.per_calorie(ing.sugar),
-                                    ing.per_calorie(ing.fiber),
-                                    ing.per_calorie(ing.salt),
-                                )
-                            } else {
-                                (ing.calories, ing.protein, ing.fat, ing.saturated_fat, ing.carbs, ing.sugar, ing.fiber, ing.salt)
-                            };
-                            view! {
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-900">{ing.name}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{}g", ing.package_size_g)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("${:.2}", ing.package_price)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.0} kcal", cal)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", prot)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", fat)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", sat_fat)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", carbs)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", sugar)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", fiber)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.0}mg", salt)}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{ing.store}</td>
-                                </tr>
-                            }
-                        }).collect::<Vec<_>>()}
-                    </tbody>
-                </table>
-            </div>
-            <p class="mt-2 text-xs text-slate-500">{format!("* Nutrient values shown {}", unit_suffix)}</p>
-        </div>
+        <th
+            class=header_class
+            on:click=move |_| on_click(col)
+        >
+            {label}
+            {move || {
+                if sort_column.get() == col {
+                    sort_direction.get().indicator()
+                } else {
+                    ""
+                }
+            }}
+        </th>
     }
 }
 
 #[component]
-fn Ingredients() -> impl IntoView {
-    let (view_mode, set_view_mode) = signal(NutrientView::Per100g);
-    let (sort_column, set_sort_column) = signal(SortColumn::Name);
-    let (sort_direction, set_sort_direction) = signal(SortDirection::None);
-
-    let handle_header_click = move |col: SortColumn| {
-        if sort_column.get() == col {
-            set_sort_direction.set(sort_direction.get().next());
-        } else {
-            set_sort_column.set(col);
-            set_sort_direction.set(SortDirection::Descending);
-        }
-    };
-
-    let get_sorted_ingredients = move |category: IngredientCategory| {
+fn IngredientTable(
+    title: &'static str,
+    category: IngredientCategory,
+    view_mode: ReadSignal<NutrientView>,
+    sort_column: ReadSignal<SortColumn>,
+    sort_direction: ReadSignal<SortDirection>,
+    on_header_click: impl Fn(SortColumn) + Clone + 'static,
+) -> impl IntoView {
+    let get_sorted_ingredients = move || {
         let mut ingredients: Vec<Ingredient> = get_ingredients()
             .into_iter()
             .filter(|i| i.category == category)
@@ -640,7 +565,12 @@ fn Ingredients() -> impl IntoView {
                         SortColumn::PackageSize => ing.package_size_g,
                         SortColumn::Price => ing.package_price,
                     };
-                    if view == NutrientView::Per100kcal && !matches!(col, SortColumn::PackageSize | SortColumn::Price | SortColumn::Calories) {
+                    if view == NutrientView::Per100kcal
+                        && !matches!(
+                            col,
+                            SortColumn::PackageSize | SortColumn::Price | SortColumn::Calories
+                        )
+                    {
                         ing.per_calorie(raw)
                     } else {
                         raw
@@ -649,13 +579,21 @@ fn Ingredients() -> impl IntoView {
 
                 if col == SortColumn::Name {
                     let cmp = a.name.cmp(b.name);
-                    return if dir == SortDirection::Ascending { cmp } else { cmp.reverse() };
+                    return if dir == SortDirection::Ascending {
+                        cmp
+                    } else {
+                        cmp.reverse()
+                    };
                 }
 
                 let val_a = get_value(a);
                 let val_b = get_value(b);
                 let cmp = val_a.partial_cmp(&val_b).unwrap_or(std::cmp::Ordering::Equal);
-                if dir == SortDirection::Ascending { cmp } else { cmp.reverse() }
+                if dir == SortDirection::Ascending {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
             });
         } else {
             // Default: sort by name ascending
@@ -663,6 +601,121 @@ fn Ingredients() -> impl IntoView {
         }
 
         ingredients
+    };
+
+    view! {
+        <div class="mb-8">
+            <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
+            <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <SortableHeader col=SortColumn::Name label="Ingredient" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::PackageSize label="Package" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Price label="Price" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Calories label="Calories" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Protein label="Protein" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Fat label="Fat" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::SaturatedFat label="Sat. Fat" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Carbs label="Carbs" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Sugar label="Sugar" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Fiber label="Fiber" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Salt label="Salt" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Store"</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <For
+                            each=get_sorted_ingredients
+                            key=|ing| ing.name
+                            let:ing
+                        >
+                            {
+                                let ing_clone = ing.clone();
+                                view! {
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-900">{ing.name}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{}g", ing.package_size_g)}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("${:.2}", ing.package_price)}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_clone.calories };
+                                                format!("{:.0} kcal", cal)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.protein) } else { ing_clone.protein };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.fat) } else { ing_clone.fat };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.saturated_fat) } else { ing_clone.saturated_fat };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.carbs) } else { ing_clone.carbs };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.sugar) } else { ing_clone.sugar };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.fiber) } else { ing_clone.fiber };
+                                                format!("{:.1}g", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                            {move || {
+                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.salt) } else { ing_clone.salt };
+                                                format!("{:.0}mg", val)
+                                            }}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{ing.store}</td>
+                                    </tr>
+                                }
+                            }
+                        </For>
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-2 text-xs text-slate-500">
+                {move || {
+                    let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
+                    format!("* Nutrient values shown {}", suffix)
+                }}
+            </p>
+        </div>
+    }
+}
+
+#[component]
+fn Ingredients() -> impl IntoView {
+    let (view_mode, set_view_mode) = signal(NutrientView::Per100g);
+    let (sort_column, set_sort_column) = signal(SortColumn::Name);
+    let (sort_direction, set_sort_direction) = signal(SortDirection::None);
+
+    let handle_header_click = move |col: SortColumn| {
+        if sort_column.get() == col {
+            set_sort_direction.set(sort_direction.get().next());
+        } else {
+            set_sort_column.set(col);
+            set_sort_direction.set(SortDirection::Descending);
+        }
     };
 
     view! {
@@ -702,37 +755,37 @@ fn Ingredients() -> impl IntoView {
 
             <IngredientTable
                 title=IngredientCategory::Protein.title()
-                ingredients=get_sorted_ingredients(IngredientCategory::Protein)
-                view_mode=view_mode.get()
-                sort_column=sort_column.get()
-                sort_direction=sort_direction.get()
+                category=IngredientCategory::Protein
+                view_mode=view_mode
+                sort_column=sort_column
+                sort_direction=sort_direction
                 on_header_click=handle_header_click.clone()
             />
 
             <IngredientTable
                 title=IngredientCategory::Carbs.title()
-                ingredients=get_sorted_ingredients(IngredientCategory::Carbs)
-                view_mode=view_mode.get()
-                sort_column=sort_column.get()
-                sort_direction=sort_direction.get()
+                category=IngredientCategory::Carbs
+                view_mode=view_mode
+                sort_column=sort_column
+                sort_direction=sort_direction
                 on_header_click=handle_header_click.clone()
             />
 
             <IngredientTable
                 title=IngredientCategory::Veggies.title()
-                ingredients=get_sorted_ingredients(IngredientCategory::Veggies)
-                view_mode=view_mode.get()
-                sort_column=sort_column.get()
-                sort_direction=sort_direction.get()
+                category=IngredientCategory::Veggies
+                view_mode=view_mode
+                sort_column=sort_column
+                sort_direction=sort_direction
                 on_header_click=handle_header_click.clone()
             />
 
             <IngredientTable
                 title=IngredientCategory::Other.title()
-                ingredients=get_sorted_ingredients(IngredientCategory::Other)
-                view_mode=view_mode.get()
-                sort_column=sort_column.get()
-                sort_direction=sort_direction.get()
+                category=IngredientCategory::Other
+                view_mode=view_mode
+                sort_column=sort_column
+                sort_direction=sort_direction
                 on_header_click=handle_header_click
             />
         </div>
