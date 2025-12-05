@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![recursion_limit = "512"]
 
 use axum::{Extension, Router};
 use console_error_panic_hook;

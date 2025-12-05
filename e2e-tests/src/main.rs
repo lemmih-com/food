@@ -60,7 +60,9 @@ impl TestRunner {
 
 /// Test: Main page is reachable and contains expected content
 async fn test_main_page_reachable(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source().await
+    let body = runner
+        .get_page_source()
+        .await
         .context("Failed to fetch main page")?;
 
     if !body.contains("food.lemmih.com") {
@@ -82,7 +84,9 @@ async fn test_main_page_reachable(runner: &TestRunner) -> Result<()> {
 
 /// Test: Navigation links are present
 async fn test_navigation_links_present(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source().await
+    let body = runner
+        .get_page_source()
+        .await
         .context("Failed to fetch main page for navigation check")?;
 
     let required_links = [
@@ -112,7 +116,9 @@ async fn test_navigation_links_present(runner: &TestRunner) -> Result<()> {
 
 /// Test: Ingredients page is accessible and contains expected content
 async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source_at("/ingredients").await
+    let body = runner
+        .get_page_source_at("/ingredients")
+        .await
         .context("Failed to fetch ingredients page")?;
 
     if !body.contains("Ingredient List") && !body.contains("Ingredients") {
@@ -123,11 +129,11 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
     }
 
     // More lenient check - just verify some ingredient-related content exists
-    let has_ingredient = body.contains("Chicken Breast") 
+    let has_ingredient = body.contains("Chicken Breast")
         || body.contains("chicken breast")
         || body.contains("Broccoli")
         || body.contains("broccoli");
-    
+
     if !has_ingredient {
         anyhow::bail!(
             "Ingredients page should contain sample ingredient data. Page length: {} bytes",
@@ -138,7 +144,7 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
     // Check for nutritional columns
     let has_nutrition = (body.contains("Protein") || body.contains("protein"))
         && (body.contains("Carbs") || body.contains("carbs") || body.contains("Carbohydrates"));
-    
+
     if !has_nutrition {
         anyhow::bail!(
             "Ingredients page should contain nutritional columns. Page length: {} bytes",
@@ -151,7 +157,9 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
 
 /// Test: Recipes page is accessible and contains expected content
 async fn test_recipes_page_accessible(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source_at("/recipes").await
+    let body = runner
+        .get_page_source_at("/recipes")
+        .await
         .context("Failed to fetch recipes page")?;
 
     if !body.contains("Recipes") && !body.contains("recipes") {
@@ -164,7 +172,7 @@ async fn test_recipes_page_accessible(runner: &TestRunner) -> Result<()> {
     // More lenient check for recipe structure
     let has_ingredients = body.contains("Ingredients:") || body.contains("ingredients:");
     let has_instructions = body.contains("Instructions:") || body.contains("instructions:");
-    
+
     if !has_ingredients || !has_instructions {
         anyhow::bail!(
             "Recipes page should contain recipe structure (Ingredients and Instructions). Has ingredients: {}, Has instructions: {}. Page length: {} bytes",
@@ -179,7 +187,9 @@ async fn test_recipes_page_accessible(runner: &TestRunner) -> Result<()> {
 
 /// Test: Settings page is accessible and contains expected content
 async fn test_settings_page_accessible(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source_at("/settings").await
+    let body = runner
+        .get_page_source_at("/settings")
+        .await
         .context("Failed to fetch settings page")?;
 
     if !body.contains("Settings") && !body.contains("settings") {
@@ -190,11 +200,11 @@ async fn test_settings_page_accessible(runner: &TestRunner) -> Result<()> {
     }
 
     // More lenient check for settings options
-    let has_settings = body.contains("Target Calories") 
+    let has_settings = body.contains("Target Calories")
         || body.contains("Macro Distribution")
         || body.contains("Daily Goals")
         || body.contains("calories");
-    
+
     if !has_settings {
         anyhow::bail!(
             "Settings page should contain settings options. Page length: {} bytes",
@@ -207,11 +217,13 @@ async fn test_settings_page_accessible(runner: &TestRunner) -> Result<()> {
 
 /// Test: CSS stylesheet link is present in HTML head
 async fn test_css_link_present(runner: &TestRunner) -> Result<()> {
-    let body = runner.get_page_source().await
+    let body = runner
+        .get_page_source()
+        .await
         .context("Failed to fetch page for CSS link check")?;
 
     let has_css_link = body.contains(r#"href="/pkg/styles.css""#) && body.contains("stylesheet");
-    
+
     if !has_css_link {
         anyhow::bail!(
             "HTML should contain CSS link tag with /pkg/styles.css. Page length: {} bytes",
@@ -224,13 +236,15 @@ async fn test_css_link_present(runner: &TestRunner) -> Result<()> {
 
 /// Test: CSS file is accessible and not empty
 async fn test_css_file_accessible(runner: &TestRunner) -> Result<()> {
-    let css_content = runner.get_css_content().await
+    let css_content = runner
+        .get_css_content()
+        .await
         .context("Failed to fetch CSS file")?;
 
     if css_content.is_empty() {
         anyhow::bail!("CSS file should not be empty");
     }
-    
+
     if css_content.len() < 100 {
         anyhow::bail!(
             "CSS file should have sufficient content (at least 100 bytes, got {})",
@@ -243,7 +257,9 @@ async fn test_css_file_accessible(runner: &TestRunner) -> Result<()> {
 
 /// Test: CSS contains required Tailwind utility classes
 async fn test_css_contains_tailwind_classes(runner: &TestRunner) -> Result<()> {
-    let css_content = runner.get_css_content().await
+    let css_content = runner
+        .get_css_content()
+        .await
         .context("Failed to fetch CSS for Tailwind check")?;
 
     // Classes that should be present based on the HTML structure
@@ -276,7 +292,9 @@ async fn test_css_contains_tailwind_classes(runner: &TestRunner) -> Result<()> {
 
 /// Test: CSS is valid Tailwind CSS output
 async fn test_css_is_valid_tailwind(runner: &TestRunner) -> Result<()> {
-    let css_content = runner.get_css_content().await
+    let css_content = runner
+        .get_css_content()
+        .await
         .context("Failed to fetch CSS for validation")?;
 
     // More lenient check - just verify it's not empty and has some CSS structure
@@ -289,11 +307,108 @@ async fn test_css_is_valid_tailwind(runner: &TestRunner) -> Result<()> {
 
     // Check for basic CSS structure
     let has_css_structure = css_content.contains("{") && css_content.contains("}");
-    
+
     if !has_css_structure {
         anyhow::bail!(
             "CSS should contain valid CSS structure. CSS length: {} bytes",
             css_content.len()
+        );
+    }
+
+    Ok(())
+}
+
+/// Test: Macro distribution always sums to 100% after changing inputs
+async fn test_macro_distribution_sums_to_100(runner: &TestRunner) -> Result<()> {
+    // Navigate to settings page
+    let url = format!("{}/settings", runner.base_url);
+    runner.driver.goto(&url).await?;
+    tokio::time::sleep(Duration::from_millis(500)).await;
+
+    // Find macro percentage inputs (they are number inputs with min="5" max="90")
+    // The inputs are in order: protein %, protein g, carbs %, carbs g, fat %, fat g
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await
+        .context("Failed to find macro percentage inputs")?;
+
+    if inputs.len() != 3 {
+        anyhow::bail!("Expected 3 macro percentage inputs, found {}", inputs.len());
+    }
+
+    // Helper to get current macro percentages
+    async fn get_macro_sum(inputs: &[WebElement]) -> Result<i32> {
+        let mut sum = 0;
+        for input in inputs {
+            let value = input.prop("value").await?.unwrap_or_default();
+            let pct: i32 = value.parse().unwrap_or(0);
+            sum += pct;
+        }
+        Ok(sum)
+    }
+
+    // Check initial sum is 100%
+    let initial_sum = get_macro_sum(&inputs).await?;
+    if initial_sum != 100 {
+        anyhow::bail!(
+            "Initial macro distribution should sum to 100%, got {}%",
+            initial_sum
+        );
+    }
+
+    // Change protein to 50% and verify sum is still 100%
+    inputs[0].clear().await?;
+    inputs[0].send_keys("50").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    // Re-fetch inputs after the page updates
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_protein_change = get_macro_sum(&inputs).await?;
+    if sum_after_protein_change != 100 {
+        anyhow::bail!(
+            "After changing protein to 50%, macro sum should be 100%, got {}%",
+            sum_after_protein_change
+        );
+    }
+
+    // Change carbs to 30% and verify sum is still 100%
+    inputs[1].clear().await?;
+    inputs[1].send_keys("30").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_carbs_change = get_macro_sum(&inputs).await?;
+    if sum_after_carbs_change != 100 {
+        anyhow::bail!(
+            "After changing carbs to 30%, macro sum should be 100%, got {}%",
+            sum_after_carbs_change
+        );
+    }
+
+    // Change fat to 25% and verify sum is still 100%
+    inputs[2].clear().await?;
+    inputs[2].send_keys("25").await?;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    let inputs = runner
+        .driver
+        .find_all(By::Css(r#"input[type="number"][min="5"][max="90"]"#))
+        .await?;
+
+    let sum_after_fat_change = get_macro_sum(&inputs).await?;
+    if sum_after_fat_change != 100 {
+        anyhow::bail!(
+            "After changing fat to 25%, macro sum should be 100%, got {}%",
+            sum_after_fat_change
         );
     }
 
@@ -342,6 +457,7 @@ async fn main() -> Result<()> {
         "CSS file is accessible" => test_css_file_accessible,
         "CSS contains Tailwind classes" => test_css_contains_tailwind_classes,
         "CSS is valid Tailwind output" => test_css_is_valid_tailwind,
+        "Macro distribution sums to 100%" => test_macro_distribution_sums_to_100,
     );
 
     // Explicitly quit WebDriver to avoid Tokio runtime shutdown panic
