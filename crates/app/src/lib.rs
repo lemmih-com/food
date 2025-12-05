@@ -522,14 +522,12 @@ fn Settings() -> impl IntoView {
         )
     });
 
-    // Salt/Sodium: use_sodium_unit = true means display as sodium (mg), false means salt (g)
-    let (use_sodium_unit, set_use_sodium_unit) = signal(true);
-    // Store internally as sodium in mg
+    // Salt/Sodium: store internally as sodium in mg
     let (sodium_mg, set_sodium_mg) = signal(2300_i32);
 
-    // Computed salt in grams (for display when using salt unit)
+    // Computed salt in grams (linked to sodium)
     let salt_grams = Memo::new(move |_| {
-        // 2300mg sodium ≈ 5.84g salt; we use: salt_g = sodium_mg / 393.4
+        // 1g salt = 393.4mg sodium; salt_g = sodium_mg / 393.4
         (sodium_mg.get() as f64 / 393.4 * 10.0).round() / 10.0
     });
 
@@ -834,58 +832,41 @@ fn Settings() -> impl IntoView {
                 <div class="rounded-lg bg-white p-6 shadow-md">
                     <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
                     <div class="space-y-4">
-                        // Salt/Sodium with toggle
+                        // Salt/Sodium with linked inputs
                         <div>
-                            <div class="mb-2 flex items-center justify-between">
-                                <label class="block text-sm font-medium text-slate-700">
-                                    {move || if use_sodium_unit.get() { "Daily Sodium Limit (mg)" } else { "Daily Salt Limit (g)" }}
-                                </label>
-                                <button
-                                    class="rounded bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-300"
-                                    on:click=move |_| set_use_sodium_unit.set(!use_sodium_unit.get())
-                                >
-                                    {move || if use_sodium_unit.get() { "Switch to Salt (g)" } else { "Switch to Sodium (mg)" }}
-                                </button>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Salt Limit"</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
+                                    <input
+                                        type="number"
+                                        prop:value=move || sodium_mg.get()
+                                        on:input=move |ev| {
+                                            if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                                                set_sodium_mg.set(val.max(0));
+                                            }
+                                        }
+                                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs text-slate-500">"Salt (g)"</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        prop:value=move || salt_grams.get()
+                                        on:input=move |ev| {
+                                            if let Ok(val) = event_target_value(&ev).parse::<f64>() {
+                                                // Convert salt grams back to sodium mg
+                                                let sodium = (val * 393.4).round() as i32;
+                                                set_sodium_mg.set(sodium.max(0));
+                                            }
+                                        }
+                                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
                             </div>
-                            {move || {
-                                if use_sodium_unit.get() {
-                                    view! {
-                                        <input
-                                            type="number"
-                                            prop:value=move || sodium_mg.get()
-                                            on:input=move |ev| {
-                                                if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                                    set_sodium_mg.set(val.max(0));
-                                                }
-                                            }
-                                            class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        />
-                                    }.into_any()
-                                } else {
-                                    view! {
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            prop:value=move || salt_grams.get()
-                                            on:input=move |ev| {
-                                                if let Ok(val) = event_target_value(&ev).parse::<f64>() {
-                                                    // Convert salt grams back to sodium mg
-                                                    let sodium = (val * 393.4).round() as i32;
-                                                    set_sodium_mg.set(sodium.max(0));
-                                                }
-                                            }
-                                            class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        />
-                                    }.into_any()
-                                }
-                            }}
-                            <p class="mt-1 text-xs text-slate-500">
-                                {move || if use_sodium_unit.get() {
-                                    format!("Equivalent to {:.1}g salt. Recommended: 2300mg (US) / 2360mg (UK)", salt_grams.get())
-                                } else {
-                                    format!("Equivalent to {}mg sodium. Recommended: ~5-6g salt per day", sodium_mg.get())
-                                }}
-                            </p>
+                            <p class="mt-1 text-xs text-slate-500">"Recommended: 2300mg sodium / 5.8g salt (US), 2360mg / 6g (UK)"</p>
                         </div>
 
                         // Saturated Fat with dual inputs (grams and percentage)
