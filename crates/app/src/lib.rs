@@ -91,82 +91,650 @@ fn Home() -> impl IntoView {
     }
 }
 
+/// Ingredient category for organizing into separate tables
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum IngredientCategory {
+    Protein,
+    Carbs,
+    Veggies,
+    Other,
+}
+
+impl IngredientCategory {
+    fn title(&self) -> &'static str {
+        match self {
+            IngredientCategory::Protein => "Proteins",
+            IngredientCategory::Carbs => "Carbs",
+            IngredientCategory::Veggies => "Vegetables",
+            IngredientCategory::Other => "Other",
+        }
+    }
+}
+
+/// All nutrient values are per 100g
+#[derive(Clone)]
+struct Ingredient {
+    name: &'static str,
+    category: IngredientCategory,
+    // Nutrients per 100g
+    calories: f32,      // kcal
+    protein: f32,       // g
+    fat: f32,           // g
+    saturated_fat: f32, // g
+    carbs: f32,         // g
+    sugar: f32,         // g
+    fiber: f32,         // g
+    salt: f32,          // mg
+    // Package info
+    package_size_g: f32, // grams
+    package_price: f32,  // price in local currency
+    store: &'static str,
+}
+
+impl Ingredient {
+    /// Get nutrient value per 100 kcal
+    fn per_calorie(&self, value_per_100g: f32) -> f32 {
+        if self.calories > 0.0 {
+            (value_per_100g / self.calories) * 100.0
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Which column to sort by
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum SortColumn {
+    #[default]
+    Name,
+    Calories,
+    Protein,
+    Fat,
+    SaturatedFat,
+    Carbs,
+    Sugar,
+    Fiber,
+    Salt,
+    PackageSize,
+    Price,
+}
+
+/// Sort direction
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum SortDirection {
+    #[default]
+    None,
+    Ascending,
+    Descending,
+}
+
+impl SortDirection {
+    fn next(self) -> Self {
+        match self {
+            SortDirection::None => SortDirection::Descending,
+            SortDirection::Descending => SortDirection::Ascending,
+            SortDirection::Ascending => SortDirection::None,
+        }
+    }
+
+    fn indicator(&self) -> &'static str {
+        match self {
+            SortDirection::None => "",
+            SortDirection::Ascending => " \u{2191}",
+            SortDirection::Descending => " \u{2193}",
+        }
+    }
+}
+
+/// Whether to show nutrients per 100g or per 100kcal
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum NutrientView {
+    #[default]
+    Per100g,
+    Per100kcal,
+}
+
+fn get_ingredients() -> Vec<Ingredient> {
+    vec![
+        // Proteins
+        Ingredient {
+            name: "Chicken Breast",
+            category: IngredientCategory::Protein,
+            calories: 165.0,
+            protein: 31.0,
+            fat: 3.6,
+            saturated_fat: 1.0,
+            carbs: 0.0,
+            sugar: 0.0,
+            fiber: 0.0,
+            salt: 74.0,
+            package_size_g: 500.0,
+            package_price: 8.99,
+            store: "Whole Foods",
+        },
+        Ingredient {
+            name: "Salmon",
+            category: IngredientCategory::Protein,
+            calories: 208.0,
+            protein: 20.0,
+            fat: 13.0,
+            saturated_fat: 3.0,
+            carbs: 0.0,
+            sugar: 0.0,
+            fiber: 0.0,
+            salt: 59.0,
+            package_size_g: 400.0,
+            package_price: 12.99,
+            store: "Costco",
+        },
+        Ingredient {
+            name: "Eggs (dozen)",
+            category: IngredientCategory::Protein,
+            calories: 155.0,
+            protein: 13.0,
+            fat: 11.0,
+            saturated_fat: 3.3,
+            carbs: 1.1,
+            sugar: 1.1,
+            fiber: 0.0,
+            salt: 124.0,
+            package_size_g: 720.0, // ~60g per egg x 12
+            package_price: 4.99,
+            store: "All stores",
+        },
+        Ingredient {
+            name: "Ground Beef (lean)",
+            category: IngredientCategory::Protein,
+            calories: 250.0,
+            protein: 26.0,
+            fat: 15.0,
+            saturated_fat: 6.0,
+            carbs: 0.0,
+            sugar: 0.0,
+            fiber: 0.0,
+            salt: 75.0,
+            package_size_g: 500.0,
+            package_price: 7.99,
+            store: "Safeway",
+        },
+        Ingredient {
+            name: "Tofu (firm)",
+            category: IngredientCategory::Protein,
+            calories: 144.0,
+            protein: 17.0,
+            fat: 9.0,
+            saturated_fat: 1.3,
+            carbs: 3.0,
+            sugar: 1.0,
+            fiber: 2.0,
+            salt: 14.0,
+            package_size_g: 400.0,
+            package_price: 2.99,
+            store: "Trader Joe's",
+        },
+        // Carbs
+        Ingredient {
+            name: "Brown Rice",
+            category: IngredientCategory::Carbs,
+            calories: 112.0,
+            protein: 2.6,
+            fat: 0.9,
+            saturated_fat: 0.2,
+            carbs: 24.0,
+            sugar: 0.4,
+            fiber: 1.8,
+            salt: 1.0,
+            package_size_g: 907.0, // 2lb
+            package_price: 3.99,
+            store: "Trader Joe's",
+        },
+        Ingredient {
+            name: "Pasta (whole wheat)",
+            category: IngredientCategory::Carbs,
+            calories: 124.0,
+            protein: 5.3,
+            fat: 0.5,
+            saturated_fat: 0.1,
+            carbs: 25.0,
+            sugar: 0.6,
+            fiber: 4.5,
+            salt: 4.0,
+            package_size_g: 454.0, // 1lb
+            package_price: 2.49,
+            store: "Safeway",
+        },
+        Ingredient {
+            name: "Oats (rolled)",
+            category: IngredientCategory::Carbs,
+            calories: 389.0,
+            protein: 16.9,
+            fat: 6.9,
+            saturated_fat: 1.2,
+            carbs: 66.0,
+            sugar: 0.0,
+            fiber: 10.6,
+            salt: 2.0,
+            package_size_g: 510.0,
+            package_price: 4.49,
+            store: "Trader Joe's",
+        },
+        Ingredient {
+            name: "Quinoa",
+            category: IngredientCategory::Carbs,
+            calories: 120.0,
+            protein: 4.4,
+            fat: 1.9,
+            saturated_fat: 0.2,
+            carbs: 21.0,
+            sugar: 0.9,
+            fiber: 2.8,
+            salt: 7.0,
+            package_size_g: 340.0,
+            package_price: 5.99,
+            store: "Whole Foods",
+        },
+        Ingredient {
+            name: "Bread (whole grain)",
+            category: IngredientCategory::Carbs,
+            calories: 247.0,
+            protein: 13.0,
+            fat: 4.2,
+            saturated_fat: 0.8,
+            carbs: 41.0,
+            sugar: 6.0,
+            fiber: 7.0,
+            salt: 450.0,
+            package_size_g: 680.0,
+            package_price: 4.99,
+            store: "Safeway",
+        },
+        // Vegetables
+        Ingredient {
+            name: "Broccoli",
+            category: IngredientCategory::Veggies,
+            calories: 34.0,
+            protein: 2.8,
+            fat: 0.4,
+            saturated_fat: 0.0,
+            carbs: 7.0,
+            sugar: 1.7,
+            fiber: 2.6,
+            salt: 33.0,
+            package_size_g: 350.0,
+            package_price: 2.49,
+            store: "Safeway",
+        },
+        Ingredient {
+            name: "Spinach (fresh)",
+            category: IngredientCategory::Veggies,
+            calories: 23.0,
+            protein: 2.9,
+            fat: 0.4,
+            saturated_fat: 0.0,
+            carbs: 3.6,
+            sugar: 0.4,
+            fiber: 2.2,
+            salt: 79.0,
+            package_size_g: 142.0, // 5oz bag
+            package_price: 3.99,
+            store: "Trader Joe's",
+        },
+        Ingredient {
+            name: "Bell Peppers",
+            category: IngredientCategory::Veggies,
+            calories: 31.0,
+            protein: 1.0,
+            fat: 0.3,
+            saturated_fat: 0.0,
+            carbs: 6.0,
+            sugar: 4.2,
+            fiber: 2.1,
+            salt: 4.0,
+            package_size_g: 300.0, // 3-pack
+            package_price: 3.99,
+            store: "Whole Foods",
+        },
+        Ingredient {
+            name: "Carrots",
+            category: IngredientCategory::Veggies,
+            calories: 41.0,
+            protein: 0.9,
+            fat: 0.2,
+            saturated_fat: 0.0,
+            carbs: 10.0,
+            sugar: 4.7,
+            fiber: 2.8,
+            salt: 69.0,
+            package_size_g: 454.0, // 1lb bag
+            package_price: 1.99,
+            store: "All stores",
+        },
+        Ingredient {
+            name: "Tomatoes (canned)",
+            category: IngredientCategory::Veggies,
+            calories: 18.0,
+            protein: 0.9,
+            fat: 0.1,
+            saturated_fat: 0.0,
+            carbs: 4.0,
+            sugar: 2.6,
+            fiber: 1.0,
+            salt: 9.0,
+            package_size_g: 400.0,
+            package_price: 1.49,
+            store: "All stores",
+        },
+        // Other
+        Ingredient {
+            name: "Olive Oil",
+            category: IngredientCategory::Other,
+            calories: 884.0,
+            protein: 0.0,
+            fat: 100.0,
+            saturated_fat: 14.0,
+            carbs: 0.0,
+            sugar: 0.0,
+            fiber: 0.0,
+            salt: 2.0,
+            package_size_g: 500.0, // 500ml bottle
+            package_price: 9.99,
+            store: "Trader Joe's",
+        },
+        Ingredient {
+            name: "Butter",
+            category: IngredientCategory::Other,
+            calories: 717.0,
+            protein: 0.9,
+            fat: 81.0,
+            saturated_fat: 51.0,
+            carbs: 0.1,
+            sugar: 0.1,
+            fiber: 0.0,
+            salt: 714.0,
+            package_size_g: 227.0, // 1/2 lb
+            package_price: 4.99,
+            store: "All stores",
+        },
+        Ingredient {
+            name: "Greek Yogurt",
+            category: IngredientCategory::Other,
+            calories: 59.0,
+            protein: 10.0,
+            fat: 0.7,
+            saturated_fat: 0.1,
+            carbs: 3.6,
+            sugar: 3.2,
+            fiber: 0.0,
+            salt: 36.0,
+            package_size_g: 450.0,
+            package_price: 5.49,
+            store: "Trader Joe's",
+        },
+        Ingredient {
+            name: "Cheese (cheddar)",
+            category: IngredientCategory::Other,
+            calories: 403.0,
+            protein: 25.0,
+            fat: 33.0,
+            saturated_fat: 21.0,
+            carbs: 1.3,
+            sugar: 0.5,
+            fiber: 0.0,
+            salt: 621.0,
+            package_size_g: 227.0,
+            package_price: 5.99,
+            store: "Costco",
+        },
+        Ingredient {
+            name: "Honey",
+            category: IngredientCategory::Other,
+            calories: 304.0,
+            protein: 0.3,
+            fat: 0.0,
+            saturated_fat: 0.0,
+            carbs: 82.0,
+            sugar: 82.0,
+            fiber: 0.0,
+            salt: 4.0,
+            package_size_g: 340.0,
+            package_price: 7.99,
+            store: "Whole Foods",
+        },
+    ]
+}
+
 #[component]
-fn Ingredients() -> impl IntoView {
+fn IngredientTable(
+    title: &'static str,
+    ingredients: Vec<Ingredient>,
+    view_mode: NutrientView,
+    sort_column: SortColumn,
+    sort_direction: SortDirection,
+    on_header_click: impl Fn(SortColumn) + Clone + 'static,
+) -> impl IntoView {
+    let header_class = "px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none";
+
+    let make_header = {
+        let on_header_click = on_header_click.clone();
+        move |col: SortColumn, label: &'static str| {
+            let on_click = on_header_click.clone();
+            let indicator = if sort_column == col {
+                sort_direction.indicator()
+            } else {
+                ""
+            };
+            view! {
+                <th
+                    class=header_class
+                    on:click=move |_| on_click(col)
+                >
+                    {label}{indicator}
+                </th>
+            }
+        }
+    };
+
+    let is_per_calorie = view_mode == NutrientView::Per100kcal;
+    let unit_suffix = if is_per_calorie { "/100kcal" } else { "/100g" };
+
     view! {
-        <div class="mx-auto max-w-7xl py-6">
-            <h2 class="mb-6 text-3xl font-bold text-slate-900">"Ingredient List"</h2>
-            <div class="rounded-lg bg-white shadow-md overflow-hidden">
-                <table class="min-w-full divide-y divide-slate-200">
+        <div class="mb-8">
+            <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
+            <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Ingredient"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Calories (per 100g)"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Protein"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Fat"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Carbs"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Price"</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Store"</th>
+                            {make_header(SortColumn::Name, "Ingredient")}
+                            {make_header(SortColumn::PackageSize, "Package")}
+                            {make_header(SortColumn::Price, "Price")}
+                            {make_header(SortColumn::Calories, "Calories")}
+                            {make_header(SortColumn::Protein, "Protein")}
+                            {make_header(SortColumn::Fat, "Fat")}
+                            {make_header(SortColumn::SaturatedFat, "Sat. Fat")}
+                            {make_header(SortColumn::Carbs, "Carbs")}
+                            {make_header(SortColumn::Sugar, "Sugar")}
+                            {make_header(SortColumn::Fiber, "Fiber")}
+                            {make_header(SortColumn::Salt, "Salt")}
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Store"</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-200">
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Chicken Breast"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"165 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"31g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"3.6g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$6.99/lb"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"Whole Foods, Trader Joe's"</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Broccoli"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"34 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"2.8g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0.4g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"7g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$2.49/lb"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"Safeway, Whole Foods"</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Brown Rice"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"112 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"2.6g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0.9g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"24g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$3.99/2lb"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"Trader Joe's, Amazon"</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Salmon"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"208 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"20g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"13g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$12.99/lb"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"Whole Foods, Costco"</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Olive Oil"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"884 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"100g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"0g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$9.99/bottle"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"Trader Joe's, Safeway"</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-900">"Eggs"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"155 kcal"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"13g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"11g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"1.1g"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"$4.99/dozen"</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-700">"All stores"</td>
-                        </tr>
+                        {ingredients.into_iter().map(|ing| {
+                            let (cal, prot, fat, sat_fat, carbs, sugar, fiber, salt) = if is_per_calorie {
+                                (
+                                    100.0, // Always 100 kcal in per-calorie view
+                                    ing.per_calorie(ing.protein),
+                                    ing.per_calorie(ing.fat),
+                                    ing.per_calorie(ing.saturated_fat),
+                                    ing.per_calorie(ing.carbs),
+                                    ing.per_calorie(ing.sugar),
+                                    ing.per_calorie(ing.fiber),
+                                    ing.per_calorie(ing.salt),
+                                )
+                            } else {
+                                (ing.calories, ing.protein, ing.fat, ing.saturated_fat, ing.carbs, ing.sugar, ing.fiber, ing.salt)
+                            };
+                            view! {
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-900">{ing.name}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{}g", ing.package_size_g)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("${:.2}", ing.package_price)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.0} kcal", cal)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", prot)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", fat)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", sat_fat)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", carbs)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", sugar)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.1}g", fiber)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{:.0}mg", salt)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-700">{ing.store}</td>
+                                </tr>
+                            }
+                        }).collect::<Vec<_>>()}
                     </tbody>
                 </table>
             </div>
+            <p class="mt-2 text-xs text-slate-500">{format!("* Nutrient values shown {}", unit_suffix)}</p>
+        </div>
+    }
+}
+
+#[component]
+fn Ingredients() -> impl IntoView {
+    let (view_mode, set_view_mode) = signal(NutrientView::Per100g);
+    let (sort_column, set_sort_column) = signal(SortColumn::Name);
+    let (sort_direction, set_sort_direction) = signal(SortDirection::None);
+
+    let handle_header_click = move |col: SortColumn| {
+        if sort_column.get() == col {
+            set_sort_direction.set(sort_direction.get().next());
+        } else {
+            set_sort_column.set(col);
+            set_sort_direction.set(SortDirection::Descending);
+        }
+    };
+
+    let get_sorted_ingredients = move |category: IngredientCategory| {
+        let mut ingredients: Vec<Ingredient> = get_ingredients()
+            .into_iter()
+            .filter(|i| i.category == category)
+            .collect();
+
+        let dir = sort_direction.get();
+        let col = sort_column.get();
+        let view = view_mode.get();
+
+        if dir != SortDirection::None {
+            ingredients.sort_by(|a, b| {
+                let get_value = |ing: &Ingredient| -> f32 {
+                    let raw = match col {
+                        SortColumn::Name => return 0.0, // Handle separately
+                        SortColumn::Calories => ing.calories,
+                        SortColumn::Protein => ing.protein,
+                        SortColumn::Fat => ing.fat,
+                        SortColumn::SaturatedFat => ing.saturated_fat,
+                        SortColumn::Carbs => ing.carbs,
+                        SortColumn::Sugar => ing.sugar,
+                        SortColumn::Fiber => ing.fiber,
+                        SortColumn::Salt => ing.salt,
+                        SortColumn::PackageSize => ing.package_size_g,
+                        SortColumn::Price => ing.package_price,
+                    };
+                    if view == NutrientView::Per100kcal && !matches!(col, SortColumn::PackageSize | SortColumn::Price | SortColumn::Calories) {
+                        ing.per_calorie(raw)
+                    } else {
+                        raw
+                    }
+                };
+
+                if col == SortColumn::Name {
+                    let cmp = a.name.cmp(b.name);
+                    return if dir == SortDirection::Ascending { cmp } else { cmp.reverse() };
+                }
+
+                let val_a = get_value(a);
+                let val_b = get_value(b);
+                let cmp = val_a.partial_cmp(&val_b).unwrap_or(std::cmp::Ordering::Equal);
+                if dir == SortDirection::Ascending { cmp } else { cmp.reverse() }
+            });
+        } else {
+            // Default: sort by name ascending
+            ingredients.sort_by(|a, b| a.name.cmp(b.name));
+        }
+
+        ingredients
+    };
+
+    view! {
+        <div class="mx-auto max-w-7xl py-6">
+            <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-3xl font-bold text-slate-900">"Ingredient List"</h2>
+                <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
+                    <span class="text-sm font-medium text-slate-700">"View nutrients:"</span>
+                    <button
+                        class=move || {
+                            let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                            if view_mode.get() == NutrientView::Per100g {
+                                format!("{} bg-blue-600 text-white", base)
+                            } else {
+                                format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                            }
+                        }
+                        on:click=move |_| set_view_mode.set(NutrientView::Per100g)
+                    >
+                        "per 100g"
+                    </button>
+                    <button
+                        class=move || {
+                            let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                            if view_mode.get() == NutrientView::Per100kcal {
+                                format!("{} bg-blue-600 text-white", base)
+                            } else {
+                                format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                            }
+                        }
+                        on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
+                    >
+                        "per 100kcal"
+                    </button>
+                </div>
+            </div>
+
+            <IngredientTable
+                title=IngredientCategory::Protein.title()
+                ingredients=get_sorted_ingredients(IngredientCategory::Protein)
+                view_mode=view_mode.get()
+                sort_column=sort_column.get()
+                sort_direction=sort_direction.get()
+                on_header_click=handle_header_click.clone()
+            />
+
+            <IngredientTable
+                title=IngredientCategory::Carbs.title()
+                ingredients=get_sorted_ingredients(IngredientCategory::Carbs)
+                view_mode=view_mode.get()
+                sort_column=sort_column.get()
+                sort_direction=sort_direction.get()
+                on_header_click=handle_header_click.clone()
+            />
+
+            <IngredientTable
+                title=IngredientCategory::Veggies.title()
+                ingredients=get_sorted_ingredients(IngredientCategory::Veggies)
+                view_mode=view_mode.get()
+                sort_column=sort_column.get()
+                sort_direction=sort_direction.get()
+                on_header_click=handle_header_click.clone()
+            />
+
+            <IngredientTable
+                title=IngredientCategory::Other.title()
+                ingredients=get_sorted_ingredients(IngredientCategory::Other)
+                view_mode=view_mode.get()
+                sort_column=sort_column.get()
+                sort_direction=sort_direction.get()
+                on_header_click=handle_header_click
+            />
         </div>
     }
 }
