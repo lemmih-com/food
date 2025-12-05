@@ -507,25 +507,28 @@ fn get_ingredients() -> Vec<Ingredient> {
 fn SortableHeader(
     col: SortColumn,
     label: &'static str,
+    width_class: &'static str,
     sort_column: ReadSignal<SortColumn>,
     sort_direction: ReadSignal<SortDirection>,
     on_click: impl Fn(SortColumn) + 'static,
 ) -> impl IntoView {
-    let header_class = "px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none";
-
     view! {
         <th
-            class=header_class
+            class=format!("px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none {}", width_class)
             on:click=move |_| on_click(col)
         >
-            {label}
-            {move || {
-                if sort_column.get() == col {
-                    sort_direction.get().indicator()
-                } else {
-                    ""
-                }
-            }}
+            <span class="inline-flex items-center gap-1">
+                {label}
+                <span class="w-3 inline-block text-center">
+                    {move || {
+                        if sort_column.get() == col {
+                            sort_direction.get().indicator()
+                        } else {
+                            ""
+                        }
+                    }}
+                </span>
+            </span>
         </th>
     }
 }
@@ -603,25 +606,36 @@ fn IngredientTable(
         ingredients
     };
 
+    // Column width classes
+    let w_name = "w-36";      // Ingredient name
+    let w_pkg = "w-20";       // Package size
+    let w_price = "w-16";     // Price
+    let w_cal = "w-20";       // Calories
+    let w_nutr = "w-16";      // Nutrient columns (protein, fat, etc.)
+    let w_salt = "w-20";      // Salt (needs more space for mg)
+    let w_store = "w-28";     // Store
+
+    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700";
+
     view! {
         <div class="mb-8">
             <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
             <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table class="w-full table-fixed divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
-                            <SortableHeader col=SortColumn::Name label="Ingredient" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::PackageSize label="Package" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Price label="Price" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Calories label="Calories" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Protein label="Protein" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Fat label="Fat" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::SaturatedFat label="Sat. Fat" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Carbs label="Carbs" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Sugar label="Sugar" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Fiber label="Fiber" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Salt label="Salt" sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">"Store"</th>
+                            <SortableHeader col=SortColumn::Name label="Ingredient" width_class=w_name sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::PackageSize label="Package" width_class=w_pkg sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Price label="Price" width_class=w_price sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Calories label="Calories" width_class=w_cal sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Protein label="Protein" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Fat label="Fat" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::SaturatedFat label="Sat. Fat" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Carbs label="Carbs" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Sugar label="Sugar" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Fiber label="Fiber" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <SortableHeader col=SortColumn::Salt label="Salt" width_class=w_salt sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
+                            <th class=format!("px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}", w_store)>"Store"</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-200">
@@ -634,58 +648,58 @@ fn IngredientTable(
                                 let ing_clone = ing.clone();
                                 view! {
                                     <tr class="hover:bg-slate-50">
-                                        <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-900">{ing.name}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("{}g", ing.package_size_g)}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{format!("${:.2}", ing.package_price)}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name}</td>
+                                        <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
+                                        <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
+                                        <td class=cell_class>
                                             {move || {
                                                 let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_clone.calories };
                                                 format!("{:.0} kcal", cal)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.protein) } else { ing_clone.protein };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.fat) } else { ing_clone.fat };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.saturated_fat) } else { ing_clone.saturated_fat };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.carbs) } else { ing_clone.carbs };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.sugar) } else { ing_clone.sugar };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.fiber) } else { ing_clone.fiber };
                                                 format!("{:.1}g", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">
+                                        <td class=cell_class>
                                             {move || {
                                                 let val = if view_mode.get() == NutrientView::Per100kcal { ing_clone.per_calorie(ing_clone.salt) } else { ing_clone.salt };
                                                 format!("{:.0}mg", val)
                                             }}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{ing.store}</td>
+                                        <td class=format!("{} truncate", cell_class)>{ing.store}</td>
                                     </tr>
                                 }
                             }
