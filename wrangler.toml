@@ -3,12 +3,12 @@ main = ".wrangler/dist/worker/worker.js"
 compatibility_date = "2024-11-23"
 workers_dev = true
 
+# Production route - only applies to default (production) environment
 [[routes]]
 pattern = "food.lemmih.com"
 custom_domain = true
 
-[build]
-command = "nix build .#website -o .wrangler/dist"
+# No build command for production - site is pre-built by Nix
 
 [assets]
 directory = ".wrangler/dist/assets"
