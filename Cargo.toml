@@ -37,6 +37,13 @@ tokio = { version = "1.38", default-features = false, features = [
   "io-util",
 ] }
 getrandom = { version = "0.3.1", features = ["wasm_js"] }
+hex = "0.4"
+gloo-net = "0.6"
+gloo-storage = "0.3"
+js-sys = "0.3"
+server_fn = { version = "0.8.8", default-features = false }
+web-time = "1.1"
+send_wrapper = "0.6"
 
 [profile.release]
 opt-level = "z"
