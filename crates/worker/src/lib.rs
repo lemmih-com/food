@@ -25,15 +25,13 @@ fn router(env: Env) -> Router<()> {
         .site_pkg_dir("pkg")
         .build();
     let routes = generate_route_list(App);
-    for route in routes.iter() {
-        log::info!("Registering Leptos route {}", route.path());
-    }
 
-    // Get ADMIN_PIN from environment
+    // Get ADMIN_PIN from environment (try secret first, then var for dev/e2e)
     let admin_pin = env
         .secret("ADMIN_PIN")
         .ok()
         .map(|s| s.to_string())
+        .or_else(|| env.var("ADMIN_PIN").ok().map(|s| s.to_string()))
         .unwrap_or_default();
 
     // Get KV namespace for auth tokens (wrapped for Send)
@@ -54,7 +52,7 @@ fn router(env: Env) -> Router<()> {
 
     // Build the leptos routes with context provider for server functions
     Router::new()
-        .route("/api/*fn_name", post({
+        .route("/api/{*fn_name}", post({
             let provide_server_context = provide_server_context.clone();
             move |req| handle_server_fns_with_context(provide_server_context.clone(), req)
         }))

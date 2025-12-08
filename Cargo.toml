@@ -42,7 +42,6 @@ gloo-net = "0.6"
 gloo-storage = "0.3"
 js-sys = "0.3"
 server_fn = { version = "0.8.8", default-features = false }
-web-time = "1.1"
 send_wrapper = "0.6"
 
 [profile.release]

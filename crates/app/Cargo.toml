@@ -26,6 +26,6 @@ wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true, features = ["HtmlElement", "KeyboardEvent", "MouseEvent", "EventTarget"] }
 getrandom = { workspace = true }
 hex = { workspace = true }
-web-time = { workspace = true }
+js-sys = { workspace = true }
 worker = { workspace = true, optional = true }
 send_wrapper = { workspace = true }

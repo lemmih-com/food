@@ -32,6 +32,15 @@ directory = "result/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
+# KV namespace for e2e tests (local KV in dev mode)
+[[env.e2e.kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "e2e-auth-tokens"
+
+# For local dev/e2e, ADMIN_PIN can be set via vars
+[env.e2e.vars]
+ADMIN_PIN = "1234"
+
 [env.preview]
 main = "result/worker/worker.js"
 workers_dev = true

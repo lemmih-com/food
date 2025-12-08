@@ -20,13 +20,17 @@ use server_fn::ServerFnError;
 /// Duration in seconds for token validity (12 hours)
 const TOKEN_EXPIRY_SECS: u64 = 12 * 60 * 60;
 
-/// Get current timestamp in seconds (works on both server and client)
+/// Get current timestamp in seconds
+/// On SSR (CloudFlare Workers): uses worker::Date::now()
+/// On client (browser): uses js_sys::Date::now()
+#[cfg(feature = "ssr")]
 fn current_time_secs() -> u64 {
-    use web_time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
+    (worker::Date::now().as_millis() / 1000) as u64
+}
+
+#[cfg(not(feature = "ssr"))]
+fn current_time_secs() -> u64 {
+    (js_sys::Date::now() / 1000.0) as u64
 }
 
 /// Generate a new random token
@@ -220,7 +224,8 @@ impl AdminAuth {
     }
 
     /// Load token from localStorage and validate it
-    #[cfg(target_arch = "wasm32")]
+    /// Only runs on client (browser), not on SSR (CloudFlare Workers)
+    #[cfg(not(feature = "ssr"))]
     fn init(&self) {
         use gloo_storage::{LocalStorage, Storage};
 
@@ -242,13 +247,14 @@ impl AdminAuth {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "ssr")]
     fn init(&self) {
         // SSR: no localStorage access
     }
 
     /// Validate token with the server using server function
-    #[cfg(target_arch = "wasm32")]
+    /// Only runs on client (browser), not on SSR (CloudFlare Workers)
+    #[cfg(not(feature = "ssr"))]
     async fn validate_token(&self, token: &str) {
         use gloo_storage::{LocalStorage, Storage};
 
@@ -271,7 +277,8 @@ impl AdminAuth {
     }
 
     /// Attempt login with PIN using server function
-    #[cfg(target_arch = "wasm32")]
+    /// Only runs on client (browser), not on SSR (CloudFlare Workers)
+    #[cfg(not(feature = "ssr"))]
     async fn login(&self, pin: &str) {
         use gloo_storage::{LocalStorage, Storage};
 
@@ -297,13 +304,14 @@ impl AdminAuth {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "ssr")]
     async fn login(&self, _pin: &str) {
         // SSR: no-op
     }
 
     /// Logout and invalidate token using server function
-    #[cfg(target_arch = "wasm32")]
+    /// Only runs on client (browser), not on SSR (CloudFlare Workers)
+    #[cfg(not(feature = "ssr"))]
     async fn logout(&self) {
         use gloo_storage::{LocalStorage, Storage};
 
@@ -317,7 +325,7 @@ impl AdminAuth {
         let _ = LocalStorage::delete(AUTH_STORAGE_KEY);
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "ssr")]
     async fn logout(&self) {
         // SSR: no-op
     }
