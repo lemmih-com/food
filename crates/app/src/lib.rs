@@ -102,8 +102,11 @@ pub async fn admin_login(pin: String) -> Result<LoginResult, ServerFnError> {
         return Err(ServerFnError::new("Invalid PIN"));
     }
 
+    // Debug logging for PIN comparison
+    log::info!("PIN attempt: entered='{}', expected='{}'", pin, auth_state.admin_pin);
+
     if pin != auth_state.admin_pin {
-        log::info!("Invalid PIN attempt");
+        log::info!("Invalid PIN attempt: '{}' != '{}'", pin, auth_state.admin_pin);
         return Err(ServerFnError::new("Invalid PIN"));
     }
 
