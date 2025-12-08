@@ -19,10 +19,9 @@ not_found_handling = "single-page-application"
 # ADMIN_PIN: 4-digit PIN for administrator access
 
 # KV namespace for storing auth tokens
-# Create with: wrangler kv namespace create AUTH_TOKENS
 [[kv_namespaces]]
 binding = "AUTH_TOKENS"
-id = "PLACEHOLDER_ID"
+id = "b87da615ba57410bac1bb18b7440d388"
 
 [env.e2e]
 main = "result/worker/worker.js"
@@ -50,3 +49,8 @@ routes = []
 directory = "result/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+# KV namespace for preview deployments (same as production)
+[[env.preview.kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "b87da615ba57410bac1bb18b7440d388"
