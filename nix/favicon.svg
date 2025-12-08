@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Macro Distribution Pie Chart: 30% red (protein), 40% blue (carbs), 30% green (fat) -->
+  <!-- Center at (60, 60), radius 50, starting from top (-PI/2) -->
+  
+  <!-- Red segment: 30% = 108 degrees, from -90 to 18 degrees -->
+  <path d="M 60 60 L 60 10 A 50 50 0 0 1 107.55 75 Z" fill="#ef4444"/>
+  
+  <!-- Blue segment: 40% = 144 degrees, from 18 to 162 degrees -->
+  <path d="M 60 60 L 107.55 75 A 50 50 0 0 1 12.45 75 Z" fill="#3b82f6"/>
+  
+  <!-- Green segment: 30% = 108 degrees, from 162 to 270 degrees (-90) -->
+  <path d="M 60 60 L 12.45 75 A 50 50 0 0 1 60 10 Z" fill="#22c55e"/>
+</svg>
