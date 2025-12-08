@@ -1,13 +1,17 @@
 name: CD
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-24.04
     name: Deploy to CloudFlare Workers
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
 
@@ -15,29 +19,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Determinate Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Configure Nix S3 cache
-      uses: lemmih/nix-s3-cache-action@v1
+    - name: Download website artifact
+      uses: actions/download-artifact@v4
       with:
-        s3-endpoint: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
-        bucket: nix-cache
-        aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        public-key: "food-ci-cache:2eICaC37vEBexPk98J0dRt5FzSX7f6hx0vRl9tPaUuM="
-
-    - name: Free up disk space
-      run: |
-        # Remove unnecessary software to free up space
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        df -h
-
-    - name: Build website
-      run: nix build .#website -o .wrangler/dist
-      timeout-minutes: 30
+        name: website
+        path: .wrangler/dist
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Deploy to CloudFlare
       uses: cloudflare/wrangler-action@v3
