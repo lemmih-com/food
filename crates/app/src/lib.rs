@@ -102,11 +102,7 @@ pub async fn admin_login(pin: String) -> Result<LoginResult, ServerFnError> {
         return Err(ServerFnError::new("Invalid PIN"));
     }
 
-    // Debug logging for PIN comparison
-    log::info!("PIN attempt: entered='{}', expected='{}'", pin, auth_state.admin_pin);
-
     if pin != auth_state.admin_pin {
-        log::info!("Invalid PIN attempt: '{}' != '{}'", pin, auth_state.admin_pin);
         return Err(ServerFnError::new("Invalid PIN"));
     }
 
@@ -346,34 +342,55 @@ impl AdminAuth {
 
 
 
-/// PIN Modal Content Component (extracted to avoid FnOnce issues)
+/// PIN Modal Content Component
 #[component]
-fn PinModalContent(pin_input: RwSignal<String>) -> impl IntoView {
+fn PinModalContent(
+    pin_digits: [RwSignal<String>; 4],
+    clear_pin: impl Fn() + Clone + 'static,
+) -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
-    // Helper functions that use signals directly - signals are Copy, so closures using them can be Copy too
     let do_close = {
         let auth = auth.clone();
+        let clear_pin = clear_pin.clone();
         move || {
             auth.close_modal();
-            pin_input.set(String::new());
+            clear_pin();
         }
     };
 
     let do_submit = {
         let auth = auth.clone();
+        let clear_pin = clear_pin.clone();
         move || {
-            let pin = pin_input.get();
+            let pin: String = pin_digits.iter().map(|d| d.get()).collect();
             if pin.len() == 4 && pin.chars().all(|c| c.is_ascii_digit()) {
                 let auth = auth.clone();
+                let clear_pin = clear_pin.clone();
                 wasm_bindgen_futures::spawn_local(async move {
                     auth.login(&pin).await;
+                    // Clear PIN after attempt (success or failure)
+                    clear_pin();
                 });
             } else {
                 auth.error_message.set(Some("Please enter a 4-digit PIN".to_string()));
+                clear_pin();
             }
         }
     };
+
+    // Focus the first input when the modal opens
+    Effect::new(move || {
+        if let Some(window) = web_sys::window() {
+            if let Some(document) = window.document() {
+                if let Some(element) = document.get_element_by_id("pin-digit-0") {
+                    if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                        let _ = input.focus();
+                    }
+                }
+            }
+        }
+    });
 
     view! {
         <div
@@ -382,7 +399,6 @@ fn PinModalContent(pin_input: RwSignal<String>) -> impl IntoView {
             on:click={
                 let do_close = do_close.clone();
                 move |ev: web_sys::MouseEvent| {
-                    // Only close if clicking on the backdrop itself, not the modal content
                     if let Some(target) = ev.target() {
                         if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
                             if element.id() == "pin-modal-backdrop" {
@@ -411,31 +427,71 @@ fn PinModalContent(pin_input: RwSignal<String>) -> impl IntoView {
 
                 <p class="mb-4 text-sm text-slate-600">"Enter your 4-digit admin PIN:"</p>
 
-                <input
-                    type="password"
-                    maxlength="4"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    placeholder="****"
-                    class="mb-4 w-full rounded border border-slate-300 px-4 py-3 text-center text-2xl tracking-widest focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    prop:value=move || pin_input.get()
-                    on:input=move |ev| {
-                        let value: String = event_target_value(&ev)
-                            .chars()
-                            .filter(|c| c.is_ascii_digit())
-                            .take(4)
-                            .collect();
-                        pin_input.set(value);
-                    }
-                    on:keypress={
-                        let do_submit = do_submit.clone();
-                        move |ev: web_sys::KeyboardEvent| {
-                            if ev.key() == "Enter" {
-                                do_submit();
+                <div class="mb-4 flex justify-center gap-3">
+                    {pin_digits
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, digit)| {
+                            view! {
+                                <input
+                                    id=format!("pin-digit-{}", i)
+                                    type="password"
+                                    maxlength="1"
+                                    inputmode="numeric"
+                                    pattern="[0-9]*"
+                                    class="h-14 w-12 rounded border border-slate-300 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    prop:value=move || digit.get()
+                                    on:input={
+                                        let do_submit = do_submit.clone();
+                                        move |ev| {
+                                            let value: String = event_target_value(&ev)
+                                                .chars()
+                                                .filter(|c| c.is_ascii_digit())
+                                                .take(1)
+                                                .collect();
+                                            digit.set(value.clone());
+
+                                            // Auto-advance to next field or submit if complete
+                                            if !value.is_empty() {
+                                                if i < 3 {
+                                                    // Focus next input
+                                                    if let Some(window) = web_sys::window() {
+                                                        if let Some(document) = window.document() {
+                                                            if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i + 1)) {
+                                                                if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                                                                    let _ = input.focus();
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Last digit entered, auto-submit
+                                                    do_submit();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    on:keydown={
+                                        move |ev: web_sys::KeyboardEvent| {
+                                            // Handle backspace to go to previous field
+                                            if ev.key() == "Backspace" && digit.get().is_empty() && i > 0 {
+                                                if let Some(window) = web_sys::window() {
+                                                    if let Some(document) = window.document() {
+                                                        if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i - 1)) {
+                                                            if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                                                                let _ = input.focus();
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                />
                             }
-                        }
-                    }
-                />
+                        })
+                        .collect_view()}
+                </div>
 
                 <Show when=move || auth.error_message.get().is_some()>
                     <p class="mb-4 text-sm text-red-600">
@@ -459,7 +515,9 @@ fn PinModalContent(pin_input: RwSignal<String>) -> impl IntoView {
                             let do_submit = do_submit.clone();
                             move |_| do_submit()
                         }
-                        disabled=move || pin_input.get().len() != 4
+                        disabled=move || {
+                            pin_digits.iter().map(|d| d.get()).collect::<String>().len() != 4
+                        }
                     >
                         "Unlock"
                     </button>
@@ -473,11 +531,35 @@ fn PinModalContent(pin_input: RwSignal<String>) -> impl IntoView {
 #[component]
 fn PinModal() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
-    let pin_input = RwSignal::new(String::new());
+    let pin_digits: [RwSignal<String>; 4] = [
+        RwSignal::new(String::new()),
+        RwSignal::new(String::new()),
+        RwSignal::new(String::new()),
+        RwSignal::new(String::new()),
+    ];
+
+    let clear_pin = {
+        let pin_digits = pin_digits;
+        move || {
+            for digit in pin_digits.iter() {
+                digit.set(String::new());
+            }
+            // Refocus the first input after clearing
+            if let Some(window) = web_sys::window() {
+                if let Some(document) = window.document() {
+                    if let Some(element) = document.get_element_by_id("pin-digit-0") {
+                        if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                            let _ = input.focus();
+                        }
+                    }
+                }
+            }
+        }
+    };
 
     view! {
         <Show when=move || auth.show_modal.get()>
-            <PinModalContent pin_input=pin_input />
+            <PinModalContent pin_digits=pin_digits clear_pin=clear_pin />
         </Show>
     }
 }
