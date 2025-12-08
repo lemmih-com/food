@@ -24,6 +24,14 @@ pub use auth::{AdminLogin, AdminLogout, AdminValidate};
 #[cfg(feature = "ssr")]
 pub use auth::SendKvStore;
 
+// Re-export ingredient types for worker registration
+pub use ingredients::{
+    CreateIngredient, DeleteIngredient, GetIngredients, Ingredient, IngredientCategory,
+    UpdateIngredient,
+};
+#[cfg(feature = "ssr")]
+pub use ingredients::SendD1Database;
+
 use auth::PinModal;
 use ingredients::Ingredients;
 use pages::{Home, Navigation};
