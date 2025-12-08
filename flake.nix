@@ -211,6 +211,29 @@
           platforms = platforms.all;
         };
       };
+      favicon = pkgs.stdenv.mkDerivation {
+        pname = "food-lemmih-com-favicon";
+        version = "0.1.0";
+        src = null;
+        dontUnpack = true;
+        nativeBuildInputs = [pkgs.imagemagick];
+        buildPhase = ''
+          runHook preBuild
+          # Convert SVG to ICO with multiple sizes for best compatibility
+          convert -background none ${./nix/favicon.svg} -define icon:auto-resize=256,128,64,48,32,16 favicon.ico
+          runHook postBuild
+        '';
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          cp favicon.ico $out/
+          runHook postInstall
+        '';
+        meta = with lib; {
+          description = "Favicon for food.lemmih.com";
+          platforms = platforms.all;
+        };
+      };
       websiteBase = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-website-base";
         version = "0.1.0";
@@ -226,6 +249,8 @@
           cp -r ${workerBundle}/worker $out/
           # Ensure CSS is still there after copying assets
           cp ${tailwindCss}/styles.css $out/assets/pkg/styles.css
+          # Add favicon to assets
+          install -Dm644 ${favicon}/favicon.ico $out/assets/favicon.ico
           runHook postInstall
         '';
         meta = with lib; {
