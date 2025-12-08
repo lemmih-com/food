@@ -1,48 +1,58 @@
 name: PR Preview
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
 
 jobs:
   deploy-preview:
     runs-on: ubuntu-24.04
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
       pull-requests: write
+      actions: read
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Determinate Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Configure Nix S3 cache
-      uses: lemmih/nix-s3-cache-action@v1
+    - name: Get PR number
+      id: pr-info
+      uses: actions/github-script@v7
       with:
-        s3-endpoint: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
-        bucket: nix-cache
-        aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        public-key: "food-ci-cache:2eICaC37vEBexPk98J0dRt5FzSX7f6hx0vRl9tPaUuM="
+        script: |
+          const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: context.payload.workflow_run.id,
+          });
+          
+          // Get PR number from the workflow run
+          const prNumber = context.payload.workflow_run.pull_requests[0]?.number;
+          if (!prNumber) {
+            core.setFailed('Could not determine PR number');
+            return;
+          }
+          core.setOutput('pr_number', prNumber);
+          console.log(`PR number: ${prNumber}`);
 
-    - name: Free up disk space
-      run: |
-        # Remove unnecessary software to free up space
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        df -h
-
-    - name: Build website
-      run: nix build .#website --no-link -o result
-      timeout-minutes: 30
+    - name: Download website artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: website
+        path: website-dist
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Get content hash
       id: content-hash
       run: |
-        HASH=$(cat result/assets/content-hash.txt)
+        HASH=$(cat website-dist/assets/content-hash.txt)
         echo "hash=$HASH" >> $GITHUB_OUTPUT
         echo "Content hash: $HASH"
 
@@ -53,7 +63,7 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         # Generate deployment name from PR number
-        DEPLOYMENT_NAME="food-pr-${{ github.event.pull_request.number }}"
+        DEPLOYMENT_NAME="food-pr-${{ steps.pr-info.outputs.pr_number }}"
         echo "deployment_name=$DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
         # Get hash from the global deployment (food.lemmih.com)
@@ -83,13 +93,30 @@ jobs:
           echo "Website content differs from global deployment, preview needed"
         fi
 
+    - name: Install Determinate Nix
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Configure Nix S3 cache
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      uses: lemmih/nix-s3-cache-action@v1
+      with:
+        s3-endpoint: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        bucket: nix-cache
+        aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        public-key: "food-ci-cache:2eICaC37vEBexPk98J0dRt5FzSX7f6hx0vRl9tPaUuM="
+
     - name: Deploy to Cloudflare Workers
       if: steps.check-deployment.outputs.needs_deploy == 'true'
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_NUMBER: ${{ steps.pr-info.outputs.pr_number }}
       run: |
+        # Move artifact to expected location for deploy script
+        rm -rf result
+        mv website-dist result
         # Deploy using the Nix deployment app
         nix run .#deploy-preview
 
@@ -101,12 +128,13 @@ jobs:
           const deploymentName = '${{ steps.check-deployment.outputs.deployment_name }}';
           const previewUrl = `https://${deploymentName}.lemmih.workers.dev`;
           const contentHash = '${{ steps.content-hash.outputs.hash }}';
+          const prNumber = ${{ steps.pr-info.outputs.pr_number }};
 
           // Find existing comment
           const { data: comments } = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number,
+            issue_number: prNumber,
           });
 
           const botComment = comments.find(comment =>
@@ -135,7 +163,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: prNumber,
               body: commentBody,
             });
           }
