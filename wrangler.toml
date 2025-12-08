@@ -15,6 +15,14 @@ directory = ".wrangler/dist/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
+# Secrets (set via `wrangler secret put ADMIN_PIN`)
+# ADMIN_PIN: 4-digit PIN for administrator access
+
+# KV namespace for storing auth tokens
+[[kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "b87da615ba57410bac1bb18b7440d388"
+
 [env.e2e]
 main = "result/worker/worker.js"
 
@@ -22,6 +30,15 @@ main = "result/worker/worker.js"
 directory = "result/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+# KV namespace for e2e tests (local KV in dev mode)
+[[env.e2e.kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "e2e-auth-tokens"
+
+# For local dev/e2e, ADMIN_PIN can be set via vars
+[env.e2e.vars]
+ADMIN_PIN = "1234"
 
 [env.preview]
 main = "result/worker/worker.js"
@@ -32,3 +49,8 @@ routes = []
 directory = "result/assets"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+# KV namespace for preview deployments (same as production)
+[[env.preview.kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = "b87da615ba57410bac1bb18b7440d388"

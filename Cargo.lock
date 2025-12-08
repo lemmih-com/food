@@ -495,10 +495,22 @@ checksum = "3a3076410a55c90011c298b04d0cfa770b00fa04e1e3c97d3f6c9de105a03844"
 name = "food-lemmih-com-app"
 version = "0.1.0"
 dependencies = [
+ "getrandom 0.3.4",
+ "gloo-storage",
+ "hex",
+ "js-sys",
  "leptos",
  "leptos_config",
  "leptos_meta",
  "leptos_router",
+ "log",
+ "send_wrapper",
+ "serde",
+ "server_fn",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "worker",
 ]
 
 [[package]]
@@ -531,14 +543,13 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "food-lemmih-com-app",
- "getrandom 0.3.4",
  "leptos",
  "leptos_axum",
  "leptos_config",
  "leptos_meta",
  "leptos_router",
  "log",
- "tower",
+ "server_fn",
  "tower-service",
  "wasm-bindgen",
  "worker",
@@ -702,6 +713,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gloo-storage"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbc8031e8c92758af912f9bc08fbbadd3c6f3cfcbf6b64cdf3d6a81f0139277a"
+dependencies = [
+ "gloo-utils",
+ "js-sys",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "gloo-utils"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -737,6 +763,12 @@ name = "hermit-abi"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
+
+[[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "html-escape"
