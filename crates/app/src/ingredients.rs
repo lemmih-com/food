@@ -701,7 +701,7 @@ pub async fn update_ingredient(ingredient: Ingredient) -> Result<(), ServerFnErr
                 ingredient.package_size_g.into(),
                 ingredient.package_price.into(),
                 ingredient.store.into(),
-                id.into(),
+                (id as f64).into(), // D1 doesn't support bigint, use f64
             ])?;
 
         stmt.run().await
@@ -722,7 +722,7 @@ pub async fn delete_ingredient(id: i64) -> Result<(), ServerFnError> {
 
     SendWrapper::new(async {
         let stmt = db.inner().prepare("DELETE FROM ingredients WHERE id = ?");
-        let stmt = stmt.bind(&[id.into()])?;
+        let stmt = stmt.bind(&[(id as f64).into()])?; // D1 doesn't support bigint, use f64
         stmt.run().await
     })
     .await
