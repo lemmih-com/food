@@ -108,6 +108,7 @@
           nativeBuildInputs = [
             wasmBindgenCli
             pkgs.binaryen
+            pkgs.esbuild
           ];
           installPhase = ''
             runHook preInstall
@@ -127,6 +128,9 @@
               --enable-mutable-globals \
               --enable-sign-ext \
               --enable-nontrapping-float-to-int
+            # Minify client.js
+            esbuild "$out_pkg/client.js" --minify --outfile="$out_pkg/client.min.js"
+            mv "$out_pkg/client.min.js" "$out_pkg/client.js"
             runHook postInstall
           '';
         });
