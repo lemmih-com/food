@@ -113,7 +113,10 @@ fn PresetButtons(
 
 /// Daily calorie goal input
 #[component]
-fn DailyGoals(daily_calories: ReadSignal<i32>, set_daily_calories: WriteSignal<i32>) -> impl IntoView {
+fn DailyGoals(
+    daily_calories: ReadSignal<i32>,
+    set_daily_calories: WriteSignal<i32>,
+) -> impl IntoView {
     view! {
       <div class="rounded-lg bg-white p-6 shadow-md">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>

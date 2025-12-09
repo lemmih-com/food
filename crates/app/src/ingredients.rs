@@ -97,7 +97,7 @@ impl SortDirection {
     pub fn indicator(&self) -> &'static str {
         match self {
             SortDirection::None => "",
-            SortDirection::Ascending => " \u{25B2}",  // up arrow
+            SortDirection::Ascending => " \u{25B2}", // up arrow
             SortDirection::Descending => " \u{25BC}", // down arrow
         }
     }

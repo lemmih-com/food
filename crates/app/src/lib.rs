@@ -20,9 +20,9 @@ use leptos_router::{
 // Re-export public types from modules
 pub use auth::{AdminAuth, AuthState, LoginResult, ValidateResult};
 // Re-export server function types for worker registration
-pub use auth::{AdminLogin, AdminLogout, AdminValidate};
 #[cfg(feature = "ssr")]
 pub use auth::SendKvStore;
+pub use auth::{AdminLogin, AdminLogout, AdminValidate};
 
 use auth::PinModal;
 use ingredients::Ingredients;

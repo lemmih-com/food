@@ -402,6 +402,9 @@
           ${pkgs.leptosfmt}/bin/leptosfmt --config-file ${./leptosfmt.toml} --check ${./.}/crates
           touch $out
         '';
+        cargoFmt = craneLib.cargoFmt {
+          inherit src;
+        };
       };
     });
 }

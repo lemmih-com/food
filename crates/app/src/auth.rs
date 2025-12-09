@@ -14,7 +14,10 @@ fn focus_element_by_id(id: &str) -> bool {
     web_sys::window()
         .and_then(|w| w.document())
         .and_then(|d| d.get_element_by_id(id))
-        .and_then(|e| e.dyn_ref::<web_sys::HtmlElement>().map(|el| el.focus().is_ok()))
+        .and_then(|e| {
+            e.dyn_ref::<web_sys::HtmlElement>()
+                .map(|el| el.focus().is_ok())
+        })
         .unwrap_or(false)
 }
 
