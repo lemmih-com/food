@@ -398,137 +398,126 @@ fn PinModalContent(
     });
 
     view! {
-        <div
-            id="pin-modal-backdrop"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            on:click={
-                let do_close = do_close.clone();
-                move |ev: web_sys::MouseEvent| {
-                    if let Some(target) = ev.target() {
-                        if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
-                            if element.id() == "pin-modal-backdrop" {
-                                do_close();
-                            }
-                        }
-                    }
+      <div
+        id="pin-modal-backdrop"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        on:click={
+          let do_close = do_close.clone();
+          move |ev: web_sys::MouseEvent| {
+            if let Some(target) = ev.target() {
+              if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                if element.id() == "pin-modal-backdrop" {
+                  do_close();
                 }
+              }
             }
-        >
-            <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-                <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-slate-900">"Admin Access"</h2>
-                    <button
-                        class="text-slate-500 hover:text-slate-700"
-                        on:click={
-                            let do_close = do_close.clone();
-                            move |_| do_close()
-                        }
-                    >
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
+          }
+        }
+      >
+        <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-900">"Admin Access"</h2>
+            <button
+              class="text-slate-500 hover:text-slate-700"
+              on:click={
+                let do_close = do_close.clone();
+                move |_| do_close()
+              }
+            >
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-                <p class="mb-4 text-sm text-slate-600">"Enter your 4-digit admin PIN:"</p>
+          <p class="mb-4 text-sm text-slate-600">"Enter your 4-digit admin PIN:"</p>
 
-                <div class="mb-4 flex justify-center gap-3">
-                    {pin_digits
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, digit)| {
-                            view! {
-                                <input
-                                    id=format!("pin-digit-{}", i)
-                                    type="password"
-                                    maxlength="1"
-                                    inputmode="numeric"
-                                    pattern="[0-9]*"
-                                    class="h-14 w-12 rounded border border-slate-300 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    prop:value=move || digit.get()
-                                    on:input={
-                                        let do_submit = do_submit.clone();
-                                        move |ev| {
-                                            let value: String = event_target_value(&ev)
-                                                .chars()
-                                                .filter(|c| c.is_ascii_digit())
-                                                .take(1)
-                                                .collect();
-                                            digit.set(value.clone());
-
-                                            // Auto-advance to next field or submit if complete
-                                            if !value.is_empty() {
-                                                if i < 3 {
-                                                    // Focus next input
-                                                    if let Some(window) = web_sys::window() {
-                                                        if let Some(document) = window.document() {
-                                                            if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i + 1)) {
-                                                                if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                                                                    let _ = input.focus();
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } else {
-                                                    // Last digit entered, auto-submit
-                                                    do_submit();
-                                                }
-                                            }
-                                        }
-                                    }
-                                    on:keydown={
-                                        move |ev: web_sys::KeyboardEvent| {
-                                            // Handle backspace to go to previous field
-                                            if ev.key() == "Backspace" && digit.get().is_empty() && i > 0 {
-                                                if let Some(window) = web_sys::window() {
-                                                    if let Some(document) = window.document() {
-                                                        if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i - 1)) {
-                                                            if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                                                                let _ = input.focus();
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                />
+          <div class="mb-4 flex justify-center gap-3">
+            {pin_digits
+              .into_iter()
+              .enumerate()
+              .map(|(i, digit)| {
+                view! {
+                  <input
+                    id=format!("pin-digit-{}", i)
+                    type="password"
+                    maxlength="1"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    class="h-14 w-12 rounded border border-slate-300 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    prop:value=move || digit.get()
+                    on:input={
+                      let do_submit = do_submit.clone();
+                      move |ev| {
+                        let value: String = event_target_value(&ev)
+                          .chars()
+                          .filter(|c| c.is_ascii_digit())
+                          .take(1)
+                          .collect();
+                        digit.set(value.clone());
+                        if !value.is_empty() {
+                          if i < 3 {
+                            if let Some(window) = web_sys::window() {
+                              if let Some(document) = window.document() {
+                                if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i + 1)) {
+                                  if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                                    let _ = input.focus();
+                                  }
+                                }
+                              }
                             }
-                        })
-                        .collect_view()}
-                </div>
+                          } else {
+                            do_submit();
+                          }
+                        }
+                      }
+                    }
+                    on:keydown=move |ev: web_sys::KeyboardEvent| {
+                      if ev.key() == "Backspace" && digit.get().is_empty() && i > 0 {
+                        if let Some(window) = web_sys::window() {
+                          if let Some(document) = window.document() {
+                            if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i - 1)) {
+                              if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
+                                let _ = input.focus();
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  />
+                }
+              })
+              .collect_view()}
+          </div>
 
-                <Show when=move || auth.error_message.get().is_some()>
-                    <p class="mb-4 text-sm text-red-600">
-                        {move || auth.error_message.get().unwrap_or_default()}
-                    </p>
-                </Show>
+          <Show when=move || auth.error_message.get().is_some()>
+            <p class="mb-4 text-sm text-red-600">{move || auth.error_message.get().unwrap_or_default()}</p>
+          </Show>
 
-                <div class="flex gap-3">
-                    <button
-                        class="flex-1 rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
-                        on:click={
-                            let do_close = do_close.clone();
-                            move |_| do_close()
-                        }
-                    >
-                        "Cancel"
-                    </button>
-                    <button
-                        class="flex-1 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
-                        on:click={
-                            let do_submit = do_submit.clone();
-                            move |_| do_submit()
-                        }
-                        disabled=move || {
-                            pin_digits.iter().map(|d| d.get()).collect::<String>().len() != 4
-                        }
-                    >
-                        "Unlock"
-                    </button>
-                </div>
-            </div>
+          <div class="flex gap-3">
+            <button
+              class="flex-1 rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+              on:click={
+                let do_close = do_close.clone();
+                move |_| do_close()
+              }
+            >
+              "Cancel"
+            </button>
+            <button
+              class="flex-1 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+              on:click={
+                let do_submit = do_submit.clone();
+                move |_| do_submit()
+              }
+              disabled=move || { pin_digits.iter().map(|d| d.get()).collect::<String>().len() != 4 }
+            >
+              "Unlock"
+            </button>
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -563,9 +552,9 @@ pub fn PinModal() -> impl IntoView {
     };
 
     view! {
-        <Show when=move || auth.show_modal.get()>
-            <PinModalContent pin_digits=pin_digits clear_pin=clear_pin />
-        </Show>
+      <Show when=move || auth.show_modal.get()>
+        <PinModalContent pin_digits=pin_digits clear_pin=clear_pin />
+      </Show>
     }
 }
 
@@ -575,15 +564,20 @@ fn UnlockButton() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
-        <button
-            class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
-            on:click=move |_| auth.open_modal()
-        >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-            "Unlock"
-        </button>
+      <button
+        class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
+        on:click=move |_| auth.open_modal()
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+        "Unlock"
+      </button>
     }
 }
 
@@ -593,20 +587,25 @@ fn LogoutButton() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
-        <button
-            class="flex items-center gap-2 rounded bg-green-700 px-3 py-2 text-sm font-medium hover:bg-green-600"
-            on:click=move |_| {
-                let auth = auth.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    auth.logout().await;
-                });
-            }
-        >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-            </svg>
-            "Logout"
-        </button>
+      <button
+        class="flex items-center gap-2 rounded bg-green-700 px-3 py-2 text-sm font-medium hover:bg-green-600"
+        on:click=move |_| {
+          let auth = auth.clone();
+          wasm_bindgen_futures::spawn_local(async move {
+            auth.logout().await;
+          });
+        }
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+          />
+        </svg>
+        "Logout"
+      </button>
     }
 }
 
@@ -616,11 +615,8 @@ pub fn AdminAuthButton() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
-        <Show
-            when=move || auth.is_authenticated.get()
-            fallback=|| view! { <UnlockButton /> }
-        >
-            <LogoutButton />
-        </Show>
+      <Show when=move || auth.is_authenticated.get() fallback=|| view! { <UnlockButton /> }>
+        <LogoutButton />
+      </Show>
     }
 }

@@ -40,37 +40,37 @@ pub fn App() -> impl IntoView {
     provide_context(auth);
 
     view! {
-        <Router>
-            <Navigation />
-            <PinModal />
-            <main class="min-h-screen bg-slate-100 px-4">
-                <Routes fallback=|| "Not found">
-                    <Route path=path!("/") view=Home />
-                    <Route path=path!("/ingredients") view=Ingredients />
-                    <Route path=path!("/recipes") view=Recipes />
-                    <Route path=path!("/settings") view=Settings />
-                </Routes>
-            </main>
-        </Router>
+      <Router>
+        <Navigation />
+        <PinModal />
+        <main class="min-h-screen bg-slate-100 px-4">
+          <Routes fallback=|| "Not found">
+            <Route path=path!("/") view=Home />
+            <Route path=path!("/ingredients") view=Ingredients />
+            <Route path=path!("/recipes") view=Recipes />
+            <Route path=path!("/settings") view=Settings />
+          </Routes>
+        </main>
+      </Router>
     }
 }
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/pkg/styles.css"/>
-                <AutoReload options=options.clone() />
-                <HydrationScripts options/>
-                <MetaTags/>
-                <title>"food.lemmih.com"</title>
-            </head>
-            <body class="bg-slate-100 text-slate-900">
-                <App/>
-            </body>
-        </html>
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <link rel="stylesheet" href="/pkg/styles.css" />
+          <AutoReload options=options.clone() />
+          <HydrationScripts options />
+          <MetaTags />
+          <title>"food.lemmih.com"</title>
+        </head>
+        <body class="bg-slate-100 text-slate-900">
+          <App />
+        </body>
+      </html>
     }
 }

@@ -85,29 +85,29 @@ fn PresetButtons(
     };
 
     view! {
-        <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
-            <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
-            <div class="flex flex-wrap gap-3">
-                <button
-                    class="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                    on:click=move |_| load_preset("usda")
-                >
-                    "USDA Dietary Guidelines"
-                </button>
-                <button
-                    class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    on:click=move |_| load_preset("aha")
-                >
-                    "AHA Guidelines"
-                </button>
-                <button
-                    class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                    on:click=move |_| load_preset("nhs")
-                >
-                    "NHS Guidelines"
-                </button>
-            </div>
+      <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            on:click=move |_| load_preset("usda")
+          >
+            "USDA Dietary Guidelines"
+          </button>
+          <button
+            class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            on:click=move |_| load_preset("aha")
+          >
+            "AHA Guidelines"
+          </button>
+          <button
+            class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            on:click=move |_| load_preset("nhs")
+          >
+            "NHS Guidelines"
+          </button>
         </div>
+      </div>
     }
 }
 
@@ -115,25 +115,25 @@ fn PresetButtons(
 #[component]
 fn DailyGoals(daily_calories: ReadSignal<i32>, set_daily_calories: WriteSignal<i32>) -> impl IntoView {
     view! {
-        <div class="rounded-lg bg-white p-6 shadow-md">
-            <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Day"</label>
-                    <input
-                        type="number"
-                        prop:value=move || daily_calories.get()
-                        on:input=move |ev| {
-                            if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                set_daily_calories.set(val.max(0));
-                            }
-                        }
-                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <p class="mt-1 text-xs text-slate-500">"Your target calorie intake per day"</p>
-                </div>
-            </div>
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Day"</label>
+            <input
+              type="number"
+              prop:value=move || daily_calories.get()
+              on:input=move |ev| {
+                if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                  set_daily_calories.set(val.max(0));
+                }
+              }
+              class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <p class="mt-1 text-xs text-slate-500">"Your target calorie intake per day"</p>
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -188,40 +188,31 @@ fn MacroPieChart(
     });
 
     view! {
-        <div class="flex-shrink-0 flex flex-col items-center">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-                // Protein slice (blue)
-                <path
-                    d=move || pie_chart_paths.get().0
-                    fill="#2563eb"
-                />
-                // Carbs slice (green)
-                <path
-                    d=move || pie_chart_paths.get().1
-                    fill="#16a34a"
-                />
-                // Fat slice (orange)
-                <path
-                    d=move || pie_chart_paths.get().2
-                    fill="#ea580c"
-                />
-            </svg>
-            // Legend
-            <div class="mt-2 flex gap-3 text-xs">
-                <div class="flex items-center gap-1">
-                    <div class="h-3 w-3 rounded-sm bg-blue-600"></div>
-                    <span>"Protein"</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <div class="h-3 w-3 rounded-sm bg-green-600"></div>
-                    <span>"Carbs"</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <div class="h-3 w-3 rounded-sm bg-orange-600"></div>
-                    <span>"Fat"</span>
-                </div>
-            </div>
+      <div class="flex-shrink-0 flex flex-col items-center">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          // Protein slice (blue)
+          <path d=move || pie_chart_paths.get().0 fill="#2563eb" />
+          // Carbs slice (green)
+          <path d=move || pie_chart_paths.get().1 fill="#16a34a" />
+          // Fat slice (orange)
+          <path d=move || pie_chart_paths.get().2 fill="#ea580c" />
+        </svg>
+        // Legend
+        <div class="mt-2 flex gap-3 text-xs">
+          <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-blue-600"></div>
+            <span>"Protein"</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-green-600"></div>
+            <span>"Carbs"</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-orange-600"></div>
+            <span>"Fat"</span>
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -244,57 +235,57 @@ fn MacroInputRow(
     let adjust_macros_grams = adjust_macros_from_grams;
 
     view! {
-        <div class="flex items-center gap-2">
-            <button
-                class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
-                class=(border_color_class, move || locked_macro.get() == Some(macro_type))
-                class=(bg_color_class, move || locked_macro.get() == Some(macro_type))
-                class=("border-slate-300", move || locked_macro.get() != Some(macro_type))
-                title=move || if locked_macro.get() == Some(macro_type) { "Click to unlock" } else { "Click to lock" }
-                on:click=move |_| {
-                    if locked_macro.get() == Some(macro_type) {
-                        set_locked_macro.set(None);
-                    } else {
-                        set_locked_macro.set(Some(macro_type));
-                    }
-                }
-            >
-                {move || if locked_macro.get() == Some(macro_type) { "🔒" } else { "🔓" }}
-            </button>
-            <div class=format!("h-3 w-3 rounded-sm {}", color_class)></div>
-            <span class="w-24 text-sm font-medium text-slate-700">{label}</span>
-            <input
-                type="number"
-                min="5"
-                max="90"
-                prop:value=move || pct.get()
-                on:input={
-                    let adjust = adjust_macros_pct.clone();
-                    move |ev| {
-                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                            adjust(macro_type, val);
-                        }
-                    }
-                }
-                class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
-            />
-            <span class="text-sm text-slate-500">"%"</span>
-            <input
-                type="number"
-                min="0"
-                prop:value=move || grams.get()
-                on:input={
-                    let adjust = adjust_macros_grams.clone();
-                    move |ev| {
-                        if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                            adjust(macro_type, val);
-                        }
-                    }
-                }
-                class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
-            />
-            <span class="text-sm text-slate-500">"g"</span>
-        </div>
+      <div class="flex items-center gap-2">
+        <button
+          class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
+          class=(border_color_class, move || locked_macro.get() == Some(macro_type))
+          class=(bg_color_class, move || locked_macro.get() == Some(macro_type))
+          class=("border-slate-300", move || locked_macro.get() != Some(macro_type))
+          title=move || { if locked_macro.get() == Some(macro_type) { "Click to unlock" } else { "Click to lock" } }
+          on:click=move |_| {
+            if locked_macro.get() == Some(macro_type) {
+              set_locked_macro.set(None);
+            } else {
+              set_locked_macro.set(Some(macro_type));
+            }
+          }
+        >
+          {move || if locked_macro.get() == Some(macro_type) { "🔒" } else { "🔓" }}
+        </button>
+        <div class=format!("h-3 w-3 rounded-sm {}", color_class)></div>
+        <span class="w-24 text-sm font-medium text-slate-700">{label}</span>
+        <input
+          type="number"
+          min="5"
+          max="90"
+          prop:value=move || pct.get()
+          on:input={
+            let adjust = adjust_macros_pct.clone();
+            move |ev| {
+              if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                adjust(macro_type, val);
+              }
+            }
+          }
+          class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+        />
+        <span class="text-sm text-slate-500">"%"</span>
+        <input
+          type="number"
+          min="0"
+          prop:value=move || grams.get()
+          on:input={
+            let adjust = adjust_macros_grams.clone();
+            move |ev| {
+              if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                adjust(macro_type, val);
+              }
+            }
+          }
+          class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+        />
+        <span class="text-sm text-slate-500">"g"</span>
+      </div>
     }
 }
 
@@ -469,65 +460,61 @@ fn MacroDistribution(
     };
 
     view! {
-        <div class="rounded-lg bg-white p-6 shadow-md">
-            <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
 
-            <div class="flex flex-col md:flex-row gap-6">
-                <MacroPieChart
-                    protein_pct=protein_pct
-                    carbs_pct=carbs_pct
-                    fat_pct=fat_pct
-                />
+        <div class="flex flex-col md:flex-row gap-6">
+          <MacroPieChart protein_pct=protein_pct carbs_pct=carbs_pct fat_pct=fat_pct />
 
-                <div class="flex-1 space-y-3">
-                    <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                        "Lock a macro to prevent it from auto-adjusting when others change"
-                    </div>
-
-                    <MacroInputRow
-                        macro_type=Macro::Protein
-                        label="Protein"
-                        color_class="bg-blue-600"
-                        border_color_class="border-blue-500"
-                        bg_color_class="bg-blue-50"
-                        pct=protein_pct
-                        grams=protein_grams
-                        locked_macro=locked_macro
-                        set_locked_macro=set_locked_macro
-                        adjust_macros=adjust_macros.clone()
-                        adjust_macros_from_grams=adjust_macros_from_grams.clone()
-                    />
-
-                    <MacroInputRow
-                        macro_type=Macro::Carbs
-                        label="Carbs"
-                        color_class="bg-green-600"
-                        border_color_class="border-green-500"
-                        bg_color_class="bg-green-50"
-                        pct=carbs_pct
-                        grams=carbs_grams
-                        locked_macro=locked_macro
-                        set_locked_macro=set_locked_macro
-                        adjust_macros=adjust_macros.clone()
-                        adjust_macros_from_grams=adjust_macros_from_grams.clone()
-                    />
-
-                    <MacroInputRow
-                        macro_type=Macro::Fat
-                        label="Fat"
-                        color_class="bg-orange-600"
-                        border_color_class="border-orange-500"
-                        bg_color_class="bg-orange-50"
-                        pct=fat_pct
-                        grams=fat_grams
-                        locked_macro=locked_macro
-                        set_locked_macro=set_locked_macro
-                        adjust_macros=adjust_macros
-                        adjust_macros_from_grams=adjust_macros_from_grams
-                    />
-                </div>
+          <div class="flex-1 space-y-3">
+            <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+              "Lock a macro to prevent it from auto-adjusting when others change"
             </div>
+
+            <MacroInputRow
+              macro_type=Macro::Protein
+              label="Protein"
+              color_class="bg-blue-600"
+              border_color_class="border-blue-500"
+              bg_color_class="bg-blue-50"
+              pct=protein_pct
+              grams=protein_grams
+              locked_macro=locked_macro
+              set_locked_macro=set_locked_macro
+              adjust_macros=adjust_macros.clone()
+              adjust_macros_from_grams=adjust_macros_from_grams.clone()
+            />
+
+            <MacroInputRow
+              macro_type=Macro::Carbs
+              label="Carbs"
+              color_class="bg-green-600"
+              border_color_class="border-green-500"
+              bg_color_class="bg-green-50"
+              pct=carbs_pct
+              grams=carbs_grams
+              locked_macro=locked_macro
+              set_locked_macro=set_locked_macro
+              adjust_macros=adjust_macros.clone()
+              adjust_macros_from_grams=adjust_macros_from_grams.clone()
+            />
+
+            <MacroInputRow
+              macro_type=Macro::Fat
+              label="Fat"
+              color_class="bg-orange-600"
+              border_color_class="border-orange-500"
+              bg_color_class="bg-orange-50"
+              pct=fat_pct
+              grams=fat_grams
+              locked_macro=locked_macro
+              set_locked_macro=set_locked_macro
+              adjust_macros=adjust_macros
+              adjust_macros_from_grams=adjust_macros_from_grams
+            />
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -557,88 +544,88 @@ fn DailyLimits(
     });
 
     view! {
-        <div class="rounded-lg bg-white p-6 shadow-md">
-            <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
-            <div class="space-y-4">
-                // Salt/Sodium with linked inputs
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Salt Limit"</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
-                            <input
-                                type="number"
-                                prop:value=move || sodium_mg.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        set_sodium_mg.set(val.max(0));
-                                    }
-                                }
-                                class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs text-slate-500">"Salt (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                prop:value=move || salt_grams.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<f64>() {
-                                        // Convert salt grams back to sodium mg
-                                        let sodium = (val * 393.4).round() as i32;
-                                        set_sodium_mg.set(sodium.max(0));
-                                    }
-                                }
-                                class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-500">"Recommended: 2300mg sodium / 5.8g salt (US), 2360mg / 6g (UK)"</p>
-                </div>
-
-                // Saturated Fat with dual inputs (grams and percentage)
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Saturated Fat Limit"</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
-                            <input
-                                type="number"
-                                prop:value=move || sat_fat_grams.get()
-                                on:input=move |ev| {
-                                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                        set_sat_fat_grams.set(val.max(0));
-                                    }
-                                }
-                                class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs text-slate-500">"% of Daily Calories"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                prop:value=move || sat_fat_pct.get()
-                                on:input={
-                                    let daily_calories = daily_calories;
-                                    move |ev| {
-                                        if let Ok(pct) = event_target_value(&ev).parse::<f64>() {
-                                            // Convert percentage to grams
-                                            let cals = daily_calories.get() as f64;
-                                            let grams = (pct / 100.0 * cals / CALORIES_PER_GRAM_FAT).round() as i32;
-                                            set_sat_fat_grams.set(grams.max(0));
-                                        }
-                                    }
-                                }
-                                class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                        </div>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-500">"Recommended: Less than 10% of daily calories (AHA recommends <6% for heart health)"</p>
-                </div>
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
+        <div class="space-y-4">
+          // Salt/Sodium with linked inputs
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Salt Limit"</label>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
+                <input
+                  type="number"
+                  prop:value=move || sodium_mg.get()
+                  on:input=move |ev| {
+                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                      set_sodium_mg.set(val.max(0));
+                    }
+                  }
+                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">"Salt (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  prop:value=move || salt_grams.get()
+                  on:input=move |ev| {
+                    if let Ok(val) = event_target_value(&ev).parse::<f64>() {
+                      let sodium = (val * 393.4).round() as i32;
+                      set_sodium_mg.set(sodium.max(0));
+                    }
+                  }
+                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
             </div>
+            <p class="mt-1 text-xs text-slate-500">"Recommended: 2300mg sodium / 5.8g salt (US), 2360mg / 6g (UK)"</p>
+          </div>
+
+          // Saturated Fat with dual inputs (grams and percentage)
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Saturated Fat Limit"</label>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
+                <input
+                  type="number"
+                  prop:value=move || sat_fat_grams.get()
+                  on:input=move |ev| {
+                    if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                      set_sat_fat_grams.set(val.max(0));
+                    }
+                  }
+                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">"% of Daily Calories"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  prop:value=move || sat_fat_pct.get()
+                  on:input={
+                    let daily_calories = daily_calories;
+                    move |ev| {
+                      if let Ok(pct) = event_target_value(&ev).parse::<f64>() {
+                        let cals = daily_calories.get() as f64;
+                        let grams = (pct / 100.0 * cals / CALORIES_PER_GRAM_FAT).round() as i32;
+                        set_sat_fat_grams.set(grams.max(0));
+                      }
+                    }
+                  }
+                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">
+              "Recommended: Less than 10% of daily calories (AHA recommends <6% for heart health)"
+            </p>
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -646,25 +633,25 @@ fn DailyLimits(
 #[component]
 fn DailyMinimums(fiber_min: ReadSignal<i32>, set_fiber_min: WriteSignal<i32>) -> impl IntoView {
     view! {
-        <div class="rounded-lg bg-white p-6 shadow-md">
-            <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Minimums"</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">"Minimum Fiber Intake (g)"</label>
-                    <input
-                        type="number"
-                        prop:value=move || fiber_min.get()
-                        on:input=move |ev| {
-                            if let Ok(val) = event_target_value(&ev).parse::<i32>() {
-                                set_fiber_min.set(val.max(0));
-                            }
-                        }
-                        class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <p class="mt-1 text-xs text-slate-500">"Recommended: 25-30g per day for adults"</p>
-                </div>
-            </div>
+      <div class="rounded-lg bg-white p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Minimums"</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">"Minimum Fiber Intake (g)"</label>
+            <input
+              type="number"
+              prop:value=move || fiber_min.get()
+              on:input=move |ev| {
+                if let Ok(val) = event_target_value(&ev).parse::<i32>() {
+                  set_fiber_min.set(val.max(0));
+                }
+              }
+              class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <p class="mt-1 text-xs text-slate-500">"Recommended: 25-30g per day for adults"</p>
+          </div>
         </div>
+      </div>
     }
 }
 
@@ -692,54 +679,48 @@ pub fn Settings() -> impl IntoView {
     let (fiber_min, set_fiber_min) = signal(25_i32);
 
     view! {
-        <div class="mx-auto max-w-4xl py-6">
-            <h2 class="mb-6 text-3xl font-bold text-slate-900">"Settings"</h2>
+      <div class="mx-auto max-w-4xl py-6">
+        <h2 class="mb-6 text-3xl font-bold text-slate-900">"Settings"</h2>
 
-            <PresetButtons
-                set_daily_calories=set_daily_calories
-                set_protein_pct=set_protein_pct
-                set_carbs_pct=set_carbs_pct
-                set_fat_pct=set_fat_pct
-                set_sodium_mg=set_sodium_mg
-                set_sat_fat_grams=set_sat_fat_grams
-                set_fiber_min=set_fiber_min
-            />
+        <PresetButtons
+          set_daily_calories=set_daily_calories
+          set_protein_pct=set_protein_pct
+          set_carbs_pct=set_carbs_pct
+          set_fat_pct=set_fat_pct
+          set_sodium_mg=set_sodium_mg
+          set_sat_fat_grams=set_sat_fat_grams
+          set_fiber_min=set_fiber_min
+        />
 
-            <div class="space-y-6">
-                <DailyGoals
-                    daily_calories=daily_calories
-                    set_daily_calories=set_daily_calories
-                />
+        <div class="space-y-6">
+          <DailyGoals daily_calories=daily_calories set_daily_calories=set_daily_calories />
 
-                <MacroDistribution
-                    daily_calories=daily_calories
-                    protein_pct=protein_pct
-                    set_protein_pct=set_protein_pct
-                    carbs_pct=carbs_pct
-                    set_carbs_pct=set_carbs_pct
-                    fat_pct=fat_pct
-                    set_fat_pct=set_fat_pct
-                />
+          <MacroDistribution
+            daily_calories=daily_calories
+            protein_pct=protein_pct
+            set_protein_pct=set_protein_pct
+            carbs_pct=carbs_pct
+            set_carbs_pct=set_carbs_pct
+            fat_pct=fat_pct
+            set_fat_pct=set_fat_pct
+          />
 
-                <DailyLimits
-                    daily_calories=daily_calories
-                    sodium_mg=sodium_mg
-                    set_sodium_mg=set_sodium_mg
-                    sat_fat_grams=sat_fat_grams
-                    set_sat_fat_grams=set_sat_fat_grams
-                />
+          <DailyLimits
+            daily_calories=daily_calories
+            sodium_mg=sodium_mg
+            set_sodium_mg=set_sodium_mg
+            sat_fat_grams=sat_fat_grams
+            set_sat_fat_grams=set_sat_fat_grams
+          />
 
-                <DailyMinimums
-                    fiber_min=fiber_min
-                    set_fiber_min=set_fiber_min
-                />
+          <DailyMinimums fiber_min=fiber_min set_fiber_min=set_fiber_min />
 
-                <div class="flex justify-end">
-                    <button class="rounded bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700">
-                        "Save Settings"
-                    </button>
-                </div>
-            </div>
+          <div class="flex justify-end">
+            <button class="rounded bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700">
+              "Save Settings"
+            </button>
+          </div>
         </div>
+      </div>
     }
 }
