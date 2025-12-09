@@ -26,6 +26,7 @@ jobs:
         aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         public-key: "food-ci-cache:2eICaC37vEBexPk98J0dRt5FzSX7f6hx0vRl9tPaUuM="
+        private-key: ${{ secrets.NIX_CACHE_PRIVATE_KEY }}
 
     - name: Free up disk space
       run: |
