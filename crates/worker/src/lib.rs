@@ -2,8 +2,6 @@
 #![recursion_limit = "512"]
 
 use axum::{routing::post, Router};
-use console_error_panic_hook;
-use console_log;
 use food_lemmih_com_app::{shell, App, AuthState, SendKvStore};
 use leptos::prelude::provide_context;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
@@ -35,7 +33,9 @@ fn router(env: Env) -> Router<()> {
         .unwrap_or_default();
 
     // Get KV namespace for auth tokens (wrapped for Send)
-    let kv_store = env.kv("AUTH_TOKENS").expect("AUTH_TOKENS KV namespace not bound");
+    let kv_store = env
+        .kv("AUTH_TOKENS")
+        .expect("AUTH_TOKENS KV namespace not bound");
     let kv_store = SendKvStore::new(kv_store);
 
     let auth_state = AuthState::new(admin_pin);
@@ -52,19 +52,17 @@ fn router(env: Env) -> Router<()> {
 
     // Build the leptos routes with context provider for server functions
     Router::new()
-        .route("/api/{*fn_name}", post({
-            let provide_server_context = provide_server_context.clone();
-            move |req| handle_server_fns_with_context(provide_server_context.clone(), req)
-        }))
-        .leptos_routes_with_context(
-            &leptos_options,
-            routes,
-            provide_server_context,
-            {
-                let leptos_options = leptos_options.clone();
-                move || shell(leptos_options.clone())
-            },
+        .route(
+            "/api/{*fn_name}",
+            post({
+                let provide_server_context = provide_server_context.clone();
+                move |req| handle_server_fns_with_context(provide_server_context.clone(), req)
+            }),
         )
+        .leptos_routes_with_context(&leptos_options, routes, provide_server_context, {
+            let leptos_options = leptos_options.clone();
+            move || shell(leptos_options.clone())
+        })
         .with_state(leptos_options)
 }
 

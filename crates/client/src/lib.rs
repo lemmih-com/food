@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
 #![recursion_limit = "512"]
 
-use console_error_panic_hook;
-use console_log;
 use food_lemmih_com_app::App;
 use leptos::mount;
 use wasm_bindgen::prelude::wasm_bindgen;

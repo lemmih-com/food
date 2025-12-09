@@ -113,7 +113,10 @@ fn PresetButtons(
 
 /// Daily calorie goal input
 #[component]
-fn DailyGoals(daily_calories: ReadSignal<i32>, set_daily_calories: WriteSignal<i32>) -> impl IntoView {
+fn DailyGoals(
+    daily_calories: ReadSignal<i32>,
+    set_daily_calories: WriteSignal<i32>,
+) -> impl IntoView {
     view! {
       <div class="rounded-lg bg-white p-6 shadow-md">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
@@ -481,8 +484,8 @@ fn MacroDistribution(
               grams=protein_grams
               locked_macro=locked_macro
               set_locked_macro=set_locked_macro
-              adjust_macros=adjust_macros.clone()
-              adjust_macros_from_grams=adjust_macros_from_grams.clone()
+              adjust_macros=adjust_macros
+              adjust_macros_from_grams=adjust_macros_from_grams
             />
 
             <MacroInputRow
@@ -495,8 +498,8 @@ fn MacroDistribution(
               grams=carbs_grams
               locked_macro=locked_macro
               set_locked_macro=set_locked_macro
-              adjust_macros=adjust_macros.clone()
-              adjust_macros_from_grams=adjust_macros_from_grams.clone()
+              adjust_macros=adjust_macros
+              adjust_macros_from_grams=adjust_macros_from_grams
             />
 
             <MacroInputRow
@@ -606,14 +609,11 @@ fn DailyLimits(
                   type="number"
                   step="0.1"
                   prop:value=move || sat_fat_pct.get()
-                  on:input={
-                    let daily_calories = daily_calories;
-                    move |ev| {
-                      if let Ok(pct) = event_target_value(&ev).parse::<f64>() {
-                        let cals = daily_calories.get() as f64;
-                        let grams = (pct / 100.0 * cals / CALORIES_PER_GRAM_FAT).round() as i32;
-                        set_sat_fat_grams.set(grams.max(0));
-                      }
+                  on:input=move |ev| {
+                    if let Ok(pct) = event_target_value(&ev).parse::<f64>() {
+                      let cals = daily_calories.get() as f64;
+                      let grams = (pct / 100.0 * cals / CALORIES_PER_GRAM_FAT).round() as i32;
+                      set_sat_fat_grams.set(grams.max(0));
                     }
                   }
                   class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"

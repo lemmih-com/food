@@ -97,7 +97,7 @@ impl SortDirection {
     pub fn indicator(&self) -> &'static str {
         match self {
             SortDirection::None => "",
-            SortDirection::Ascending => " \u{25B2}",  // up arrow
+            SortDirection::Ascending => " \u{25B2}", // up arrow
             SortDirection::Descending => " \u{25BC}", // down arrow
         }
     }
@@ -644,97 +644,88 @@ fn IngredientTable(
             </thead>
             <tbody class="bg-white divide-y divide-slate-200">
               <For each=get_sorted_ingredients key=|ing| ing.name let:ing>
-                {
-                  let ing_clone = ing.clone();
-                  view! {
-                    <tr class="hover:bg-slate-50">
-                      <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name}</td>
-                      <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
-                      <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
-                      <td class=cell_class>
-                        {move || {
-                          let cal = if view_mode.get() == NutrientView::Per100kcal {
-                            100.0
-                          } else {
-                            ing_clone.calories
-                          };
-                          format!("{:.0} kcal", cal)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.protein)
-                          } else {
-                            ing_clone.protein
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.fat)
-                          } else {
-                            ing_clone.fat
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.saturated_fat)
-                          } else {
-                            ing_clone.saturated_fat
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.carbs)
-                          } else {
-                            ing_clone.carbs
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.sugar)
-                          } else {
-                            ing_clone.sugar
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.fiber)
-                          } else {
-                            ing_clone.fiber
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_clone.per_calorie(ing_clone.salt)
-                          } else {
-                            ing_clone.salt
-                          };
-                          format!("{:.0}mg", val)
-                        }}
-                      </td>
-                      <td class=format!("{} truncate", cell_class)>{ing.store}</td>
-                    </tr>
-                  }
-                }
+                <tr class="hover:bg-slate-50">
+                  <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name}</td>
+                  <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
+                  <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
+                  <td class=cell_class>
+                    {move || {
+                      let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing.calories };
+                      format!("{:.0} kcal", cal)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.protein)
+                      } else {
+                        ing.protein
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.fat)
+                      } else {
+                        ing.fat
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.saturated_fat)
+                      } else {
+                        ing.saturated_fat
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.carbs)
+                      } else {
+                        ing.carbs
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.sugar)
+                      } else {
+                        ing.sugar
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.fiber)
+                      } else {
+                        ing.fiber
+                      };
+                      format!("{:.1}g", val)
+                    }}
+                  </td>
+                  <td class=cell_class>
+                    {move || {
+                      let val = if view_mode.get() == NutrientView::Per100kcal {
+                        ing.per_calorie(ing.salt)
+                      } else {
+                        ing.salt
+                      };
+                      format!("{:.0}mg", val)
+                    }}
+                  </td>
+                  <td class=format!("{} truncate", cell_class)>{ing.store}</td>
+                </tr>
               </For>
             </tbody>
           </table>
@@ -805,7 +796,7 @@ pub fn Ingredients() -> impl IntoView {
           view_mode=view_mode
           sort_column=sort_column
           sort_direction=sort_direction
-          on_header_click=handle_header_click.clone()
+          on_header_click=handle_header_click
         />
 
         <IngredientTable
@@ -814,7 +805,7 @@ pub fn Ingredients() -> impl IntoView {
           view_mode=view_mode
           sort_column=sort_column
           sort_direction=sort_direction
-          on_header_click=handle_header_click.clone()
+          on_header_click=handle_header_click
         />
 
         <IngredientTable
@@ -823,7 +814,7 @@ pub fn Ingredients() -> impl IntoView {
           view_mode=view_mode
           sort_column=sort_column
           sort_direction=sort_direction
-          on_header_click=handle_header_click.clone()
+          on_header_click=handle_header_click
         />
 
         <IngredientTable
