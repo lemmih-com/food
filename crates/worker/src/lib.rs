@@ -2,8 +2,6 @@
 #![recursion_limit = "512"]
 
 use axum::{routing::post, Router};
-use console_error_panic_hook;
-use console_log;
 use food_lemmih_com_app::{shell, App, AuthState, SendKvStore};
 use leptos::prelude::provide_context;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};

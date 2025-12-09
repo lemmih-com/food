@@ -33,7 +33,7 @@ const TOKEN_EXPIRY_SECS: u64 = 12 * 60 * 60;
 /// On client (browser): uses js_sys::Date::now()
 #[cfg(feature = "ssr")]
 fn current_time_secs() -> u64 {
-    (worker::Date::now().as_millis() / 1000) as u64
+    worker::Date::now().as_millis() / 1000
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -204,8 +204,10 @@ pub async fn admin_logout(token: String) -> Result<bool, ServerFnError> {
 // Admin Authentication - Client-side State
 // ============================================================================
 
+#[cfg(not(feature = "ssr"))]
 const AUTH_STORAGE_KEY: &str = "admin_auth_token";
 
+#[cfg(not(feature = "ssr"))]
 #[derive(Clone, Serialize, Deserialize)]
 struct AuthToken {
     token: String,
@@ -517,15 +519,12 @@ pub fn PinModal() -> impl IntoView {
         RwSignal::new(String::new()),
     ];
 
-    let clear_pin = {
-        let pin_digits = pin_digits;
-        move || {
-            for digit in pin_digits.iter() {
-                digit.set(String::new());
-            }
-            // Refocus the first input after clearing
-            focus_element_by_id("pin-digit-0");
+    let clear_pin = move || {
+        for digit in pin_digits.iter() {
+            digit.set(String::new());
         }
+        // Refocus the first input after clearing
+        focus_element_by_id("pin-digit-0");
     };
 
     view! {

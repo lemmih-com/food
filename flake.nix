@@ -405,6 +405,11 @@
         cargoFmt = craneLib.cargoFmt {
           inherit src;
         };
+        cargoClippy = craneLib.cargoClippy {
+          inherit src;
+          cargoArtifacts = craneLib.buildDepsOnly {inherit src;};
+          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        };
       };
     });
 }
