@@ -1,32 +1,17 @@
 # food.lemmih.com
 
-Minimal Leptos hello-world rendered on Cloudflare Workers with SSR enabled.
+A meal prep and food diary application.
 
-## Development
+## Technology Stack
 
-```bash
-cd food-lemmih-com
-wrangler dev
-```
+- **Rust** - Core programming language
+- **Leptos** - Full-stack Rust web framework with SSR
+- **Nix** - Reproducible builds and development environment
+- **WebDriver** - End-to-end testing
+- **Cloudflare Workers** - Serverless deployment platform
+- **Cloudflare D1** - SQLite database
+- **Cloudflare KV** - Key-value storage
 
-The `wrangler dev` command uses Nix to build the worker via `nix build .#website`.
+## Deployment
 
-## End-to-end test
-
-With `wrangler dev` running you can either:
-
-- Run via Nix (from the repository root, note the quotes to satisfy zsh):
-
-  ```bash
-  nix run '.#e2e-tests' -- --help   # passes through extra args to cargo run
-  ```
-
-- Or run via Cargo directly:
-
-```bash
-cd food-lemmih-com/e2e-tests
-cargo run
-```
-
-Set `FOOD_APP_BASE_URL` if the worker is hosted on a different origin.
-
+Deployments are fully automated via GitHub Actions.
