@@ -61,6 +61,10 @@ for i in {1..10}; do
   sleep 1
 done
 
+# Apply D1 migrations before starting wrangler
+echo "Applying D1 migrations..."
+"$WRANGLER_BIN" d1 migrations apply INGREDIENTS_DB --env e2e --local 2>&1 || true
+
 # Start wrangler dev with e2e environment
 echo "Starting wrangler dev with e2e environment..."
 WRANGLER_PORT=${WRANGLER_PORT:-8787}

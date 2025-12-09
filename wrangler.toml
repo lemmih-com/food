@@ -23,6 +23,13 @@ not_found_handling = "single-page-application"
 binding = "AUTH_TOKENS"
 id = "b87da615ba57410bac1bb18b7440d388"
 
+# D1 database for ingredients storage
+[[d1_databases]]
+binding = "INGREDIENTS_DB"
+database_name = "food-lemmih-com-ingredients"
+database_id = "779425b4-cc96-4154-a422-bd45165d3bd1"
+migrations_dir = "migrations"
+
 [env.e2e]
 main = "result/worker/worker.js"
 
@@ -35,6 +42,13 @@ not_found_handling = "single-page-application"
 [[env.e2e.kv_namespaces]]
 binding = "AUTH_TOKENS"
 id = "e2e-auth-tokens"
+
+# D1 database for e2e tests (local)
+[[env.e2e.d1_databases]]
+binding = "INGREDIENTS_DB"
+database_name = "food-lemmih-com-ingredients-e2e"
+database_id = "e2e-ingredients-db"
+migrations_dir = "migrations"
 
 # For local dev/e2e, ADMIN_PIN can be set via vars
 [env.e2e.vars]
@@ -54,3 +68,10 @@ not_found_handling = "single-page-application"
 [[env.preview.kv_namespaces]]
 binding = "AUTH_TOKENS"
 id = "b87da615ba57410bac1bb18b7440d388"
+
+# D1 database for preview deployments (same as production)
+[[env.preview.d1_databases]]
+binding = "INGREDIENTS_DB"
+database_name = "food-lemmih-com-ingredients"
+database_id = "779425b4-cc96-4154-a422-bd45165d3bd1"
+migrations_dir = "migrations"

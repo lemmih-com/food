@@ -2,7 +2,7 @@
 #![recursion_limit = "512"]
 
 use axum::{routing::post, Router};
-use food_lemmih_com_app::{shell, App, AuthState, SendKvStore};
+use food_lemmih_com_app::{shell, App, AuthState, SendD1Database, SendKvStore};
 use leptos::prelude::provide_context;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
 use leptos_config::LeptosOptions;
@@ -12,9 +12,15 @@ use worker::{event, Context, Env, HttpRequest, Result};
 // Register server functions at worker start
 #[event(start)]
 fn register() {
+    // Auth server functions
     server_fn::axum::register_explicit::<food_lemmih_com_app::AdminLogin>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::AdminValidate>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::AdminLogout>();
+    // Ingredient server functions
+    server_fn::axum::register_explicit::<food_lemmih_com_app::GetIngredients>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::CreateIngredient>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::UpdateIngredient>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::DeleteIngredient>();
 }
 
 fn router(env: Env) -> Router<()> {
@@ -38,15 +44,23 @@ fn router(env: Env) -> Router<()> {
         .expect("AUTH_TOKENS KV namespace not bound");
     let kv_store = SendKvStore::new(kv_store);
 
+    // Get D1 database for ingredients (wrapped for Send)
+    let d1_db = env
+        .d1("INGREDIENTS_DB")
+        .expect("INGREDIENTS_DB D1 database not bound");
+    let d1_db = SendD1Database::new(d1_db);
+
     let auth_state = AuthState::new(admin_pin);
 
     // Context provider function for server functions
     let provide_server_context = {
         let auth_state = auth_state.clone();
         let kv_store = kv_store.clone();
+        let d1_db = d1_db.clone();
         move || {
             provide_context(auth_state.clone());
             provide_context(kv_store.clone());
+            provide_context(d1_db.clone());
         }
     };
 

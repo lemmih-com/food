@@ -38,8 +38,8 @@ impl TestRunner {
     async fn get_page_source_at(&self, path: &str) -> Result<String> {
         let url = format!("{}{}", self.base_url, path);
         self.driver.goto(&url).await?;
-        // Wait a bit for page to fully load
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        // Wait longer for page to fully load (including async data fetching)
+        tokio::time::sleep(Duration::from_millis(2000)).await;
         self.driver.source().await.context("getting page source")
     }
 
@@ -125,6 +125,42 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
         anyhow::bail!(
             "Ingredients page should contain 'Ingredient List' or 'Ingredients' heading. Page length: {} bytes",
             body.len()
+        );
+    }
+
+    // Check if still loading
+    if body.contains("Loading ingredients") {
+        anyhow::bail!(
+            "Ingredients page is still showing loading state after 2s wait. Server function may not be working. Page length: {} bytes",
+            body.len()
+        );
+    }
+
+    // Check for error state
+    if body.contains("Failed to load ingredients") {
+        anyhow::bail!(
+            "Ingredients page shows error loading data. Check server function and D1 database. Page length: {} bytes",
+            body.len()
+        );
+    }
+
+    // Check for table headers which should be present even without data
+    let has_table_headers = body.contains("Proteins")
+        || body.contains("Carbs")
+        || body.contains("Vegetables")
+        || body.contains("Other");
+
+    if !has_table_headers {
+        // Print a snippet of the body for debugging
+        let snippet = if body.len() > 500 {
+            &body[..500]
+        } else {
+            &body
+        };
+        anyhow::bail!(
+            "Ingredients page should contain category tables (Proteins, Carbs, Vegetables, Other). Page length: {} bytes. Snippet: {}...",
+            body.len(),
+            snippet
         );
     }
 

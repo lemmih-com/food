@@ -506,6 +506,7 @@ dependencies = [
  "log",
  "send_wrapper",
  "serde",
+ "serde_json",
  "server_fn",
  "wasm-bindgen",
  "wasm-bindgen-futures",
