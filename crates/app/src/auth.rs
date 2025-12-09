@@ -8,6 +8,16 @@ use serde::{Deserialize, Serialize};
 use server_fn::ServerFnError;
 use wasm_bindgen::JsCast;
 
+/// Focus an HTML element by its ID.
+/// Returns true if the element was found and focused, false otherwise.
+fn focus_element_by_id(id: &str) -> bool {
+    web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id(id))
+        .and_then(|e| e.dyn_ref::<web_sys::HtmlElement>().map(|el| el.focus().is_ok()))
+        .unwrap_or(false)
+}
+
 // ============================================================================
 // Admin Authentication - Server-side State
 // ============================================================================
@@ -386,30 +396,18 @@ fn PinModalContent(
 
     // Focus the first input when the modal opens
     Effect::new(move || {
-        if let Some(window) = web_sys::window() {
-            if let Some(document) = window.document() {
-                if let Some(element) = document.get_element_by_id("pin-digit-0") {
-                    if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                        let _ = input.focus();
-                    }
-                }
-            }
-        }
+        focus_element_by_id("pin-digit-0");
     });
 
     view! {
       <div
         id="pin-modal-backdrop"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-        on:click={
+        on:click:target={
           let do_close = do_close.clone();
-          move |ev: web_sys::MouseEvent| {
-            if let Some(target) = ev.target() {
-              if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
-                if element.id() == "pin-modal-backdrop" {
-                  do_close();
-                }
-              }
+          move |ev| {
+            if ev.target().id() == "pin-modal-backdrop" {
+              do_close();
             }
           }
         }
@@ -457,15 +455,7 @@ fn PinModalContent(
                         digit.set(value.clone());
                         if !value.is_empty() {
                           if i < 3 {
-                            if let Some(window) = web_sys::window() {
-                              if let Some(document) = window.document() {
-                                if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i + 1)) {
-                                  if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                                    let _ = input.focus();
-                                  }
-                                }
-                              }
-                            }
+                            focus_element_by_id(&format!("pin-digit-{}", i + 1));
                           } else {
                             do_submit();
                           }
@@ -474,15 +464,7 @@ fn PinModalContent(
                     }
                     on:keydown=move |ev: web_sys::KeyboardEvent| {
                       if ev.key() == "Backspace" && digit.get().is_empty() && i > 0 {
-                        if let Some(window) = web_sys::window() {
-                          if let Some(document) = window.document() {
-                            if let Some(element) = document.get_element_by_id(&format!("pin-digit-{}", i - 1)) {
-                              if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                                let _ = input.focus();
-                              }
-                            }
-                          }
-                        }
+                        focus_element_by_id(&format!("pin-digit-{}", i - 1));
                       }
                     }
                   />
@@ -539,15 +521,7 @@ pub fn PinModal() -> impl IntoView {
                 digit.set(String::new());
             }
             // Refocus the first input after clearing
-            if let Some(window) = web_sys::window() {
-                if let Some(document) = window.document() {
-                    if let Some(element) = document.get_element_by_id("pin-digit-0") {
-                        if let Some(input) = element.dyn_ref::<web_sys::HtmlElement>() {
-                            let _ = input.focus();
-                        }
-                    }
-                }
-            }
+            focus_element_by_id("pin-digit-0");
         }
     };
 
