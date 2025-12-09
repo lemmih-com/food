@@ -42,7 +42,7 @@ impl IngredientCategory {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse_str(s: &str) -> Option<Self> {
         match s {
             "protein" => Some(IngredientCategory::Protein),
             "carbs" => Some(IngredientCategory::Carbs),
@@ -158,7 +158,7 @@ impl SortDirection {
     pub fn indicator(&self) -> &'static str {
         match self {
             SortDirection::None => "",
-            SortDirection::Ascending => " \u{25B2}",  // up arrow
+            SortDirection::Ascending => " \u{25B2}", // up arrow
             SortDirection::Descending => " \u{25BC}", // down arrow
         }
     }
@@ -601,7 +601,7 @@ pub async fn get_ingredients() -> Result<Vec<Ingredient>, ServerFnError> {
         .into_iter()
         .filter_map(|row| {
             let category_str = row.get("category")?.as_str()?;
-            let category = IngredientCategory::from_str(category_str)?;
+            let category = IngredientCategory::parse_str(category_str)?;
             Some(Ingredient {
                 id: row.get("id")?.as_i64(),
                 name: row.get("name")?.as_str()?.to_string(),
@@ -746,23 +746,20 @@ fn SortableHeader(
     on_click: impl Fn(SortColumn) + 'static,
 ) -> impl IntoView {
     view! {
-        <th
-            class=format!("px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none {}", width_class)
-            on:click=move |_| on_click(col)
-        >
-            <span class="inline-flex items-center gap-1">
-                {label}
-                <span class="w-3 inline-block text-center">
-                    {move || {
-                        if sort_column.get() == col {
-                            sort_direction.get().indicator()
-                        } else {
-                            ""
-                        }
-                    }}
-                </span>
-            </span>
-        </th>
+      <th
+        class=format!(
+          "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none {}",
+          width_class,
+        )
+        on:click=move |_| on_click(col)
+      >
+        <span class="inline-flex items-center gap-1">
+          {label}
+          <span class="w-3 inline-block text-center">
+            {move || { if sort_column.get() == col { sort_direction.get().indicator() } else { "" } }}
+          </span>
+        </span>
+      </th>
     }
 }
 
@@ -884,221 +881,218 @@ fn IngredientModal(
     let label_class = "block text-sm font-medium text-slate-700 mb-1";
 
     view! {
-        <Show when=move || show.get()>
-            <div
-                id="ingredient-modal-backdrop"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-4"
-                on:click=move |ev: web_sys::MouseEvent| {
-                    if let Some(target) = ev.target() {
-                        if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
-                            if element.id() == "ingredient-modal-backdrop" {
-                                close();
-                            }
-                        }
-                    }
+      <Show when=move || show.get()>
+        <div
+          id="ingredient-modal-backdrop"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-4"
+          on:click=move |ev: web_sys::MouseEvent| {
+            if let Some(target) = ev.target() {
+              if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                if element.id() == "ingredient-modal-backdrop" {
+                  close();
                 }
-            >
-                <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl mx-4">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h2 class="text-xl font-bold text-slate-900">
-                            {move || if editing.get().is_some() { "Edit Ingredient" } else { "New Ingredient" }}
-                        </h2>
-                        <button
-                            class="text-slate-500 hover:text-slate-700"
-                            on:click=move |_| close()
-                        >
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <Show when=move || error.get().is_some()>
-                        <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
-                            {move || error.get().unwrap_or_default()}
-                        </div>
-                    </Show>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        // Name and Category
-                        <div class="col-span-2 sm:col-span-1">
-                            <label class=label_class>"Name"</label>
-                            <input
-                                type="text"
-                                class=input_class
-                                prop:value=move || name.get()
-                                on:input=move |ev| name.set(event_target_value(&ev))
-                                placeholder="e.g., Chicken Breast"
-                            />
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label class=label_class>"Category"</label>
-                            <select
-                                class=input_class
-                                on:change=move |ev| {
-                                    let value = event_target_value(&ev);
-                                    if let Some(cat) = IngredientCategory::from_str(&value) {
-                                        category.set(cat);
-                                    }
-                                }
-                            >
-                                {IngredientCategory::all().into_iter().map(|cat| {
-                                    view! {
-                                        <option
-                                            value=cat.as_str()
-                                            selected=move || category.get() == cat
-                                        >
-                                            {cat.title()}
-                                        </option>
-                                    }
-                                }).collect_view()}
-                            </select>
-                        </div>
-
-                        // Nutrients section
-                        <div class="col-span-2">
-                            <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Nutrients (per 100g)"</h3>
-                        </div>
-
-                        <div>
-                            <label class=label_class>"Calories (kcal)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || calories.get()
-                                on:input=move |ev| calories.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Protein (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || protein.get()
-                                on:input=move |ev| protein.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Fat (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || fat.get()
-                                on:input=move |ev| fat.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Saturated Fat (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || saturated_fat.get()
-                                on:input=move |ev| saturated_fat.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Carbs (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || carbs.get()
-                                on:input=move |ev| carbs.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Sugar (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || sugar.get()
-                                on:input=move |ev| sugar.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Fiber (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || fiber.get()
-                                on:input=move |ev| fiber.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Salt (mg)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || salt.get()
-                                on:input=move |ev| salt.set(event_target_value(&ev))
-                            />
-                        </div>
-
-                        // Package info section
-                        <div class="col-span-2">
-                            <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Package Information"</h3>
-                        </div>
-
-                        <div>
-                            <label class=label_class>"Package Size (g)"</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                class=input_class
-                                prop:value=move || package_size.get()
-                                on:input=move |ev| package_size.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class=label_class>"Price ($)"</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                class=input_class
-                                prop:value=move || package_price.get()
-                                on:input=move |ev| package_price.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div class="col-span-2">
-                            <label class=label_class>"Store"</label>
-                            <input
-                                type="text"
-                                class=input_class
-                                prop:value=move || store.get()
-                                on:input=move |ev| store.set(event_target_value(&ev))
-                                placeholder="e.g., Whole Foods"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button
-                            class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
-                            on:click=move |_| close()
-                        >
-                            "Cancel"
-                        </button>
-                        <button
-                            class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
-                            disabled=move || saving.get()
-                            on:click={
-                                let handle_save = handle_save.clone();
-                                move |_| handle_save()
-                            }
-                        >
-                            {move || if saving.get() { "Saving..." } else { "Save" }}
-                        </button>
-                    </div>
-                </div>
+              }
+            }
+          }
+        >
+          <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl mx-4">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl font-bold text-slate-900">
+                {move || if editing.get().is_some() { "Edit Ingredient" } else { "New Ingredient" }}
+              </h2>
+              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-        </Show>
+
+            <Show when=move || error.get().is_some()>
+              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+                {move || error.get().unwrap_or_default()}
+              </div>
+            </Show>
+
+            <div class="grid grid-cols-2 gap-4">
+              // Name and Category
+              <div class="col-span-2 sm:col-span-1">
+                <label class=label_class>"Name"</label>
+                <input
+                  type="text"
+                  class=input_class
+                  prop:value=move || name.get()
+                  on:input=move |ev| name.set(event_target_value(&ev))
+                  placeholder="e.g., Chicken Breast"
+                />
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <label class=label_class>"Category"</label>
+                <select
+                  class=input_class
+                  on:change=move |ev| {
+                    let value = event_target_value(&ev);
+                    if let Some(cat) = IngredientCategory::parse_str(&value) {
+                      category.set(cat);
+                    }
+                  }
+                >
+                  {IngredientCategory::all()
+                    .into_iter()
+                    .map(|cat| {
+                      view! {
+                        <option value=cat.as_str() selected=move || category.get() == cat>
+                          {cat.title()}
+                        </option>
+                      }
+                    })
+                    .collect_view()}
+                </select>
+              </div>
+
+              // Nutrients section
+              <div class="col-span-2">
+                <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Nutrients (per 100g)"</h3>
+              </div>
+
+              <div>
+                <label class=label_class>"Calories (kcal)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || calories.get()
+                  on:input=move |ev| calories.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Protein (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || protein.get()
+                  on:input=move |ev| protein.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Fat (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || fat.get()
+                  on:input=move |ev| fat.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Saturated Fat (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || saturated_fat.get()
+                  on:input=move |ev| saturated_fat.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Carbs (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || carbs.get()
+                  on:input=move |ev| carbs.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Sugar (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || sugar.get()
+                  on:input=move |ev| sugar.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Fiber (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || fiber.get()
+                  on:input=move |ev| fiber.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Salt (mg)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || salt.get()
+                  on:input=move |ev| salt.set(event_target_value(&ev))
+                />
+              </div>
+
+              // Package info section
+              <div class="col-span-2">
+                <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Package Information"</h3>
+              </div>
+
+              <div>
+                <label class=label_class>"Package Size (g)"</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  class=input_class
+                  prop:value=move || package_size.get()
+                  on:input=move |ev| package_size.set(event_target_value(&ev))
+                />
+              </div>
+              <div>
+                <label class=label_class>"Price ($)"</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class=input_class
+                  prop:value=move || package_price.get()
+                  on:input=move |ev| package_price.set(event_target_value(&ev))
+                />
+              </div>
+              <div class="col-span-2">
+                <label class=label_class>"Store"</label>
+                <input
+                  type="text"
+                  class=input_class
+                  prop:value=move || store.get()
+                  on:input=move |ev| store.set(event_target_value(&ev))
+                  placeholder="e.g., Whole Foods"
+                />
+              </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+              <button
+                class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                on:click=move |_| close()
+              >
+                "Cancel"
+              </button>
+              <button
+                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                disabled=move || saving.get()
+                on:click={
+                  let handle_save = handle_save.clone();
+                  move |_| handle_save()
+                }
+              >
+                {move || if saving.get() { "Saving..." } else { "Save" }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
     }
 }
 
@@ -1195,132 +1189,244 @@ fn IngredientTable(
     let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700";
 
     view! {
-        <div class="mb-8">
-            <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
-            <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
-                <table class="w-full table-fixed divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <SortableHeader col=SortColumn::Name label="Ingredient" width_class=w_name sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::PackageSize label="Package" width_class=w_pkg sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Price label="Price" width_class=w_price sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Calories label="Calories" width_class=w_cal sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Protein label="Protein" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Fat label="Fat" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::SaturatedFat label="Sat. Fat" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Carbs label="Carbs" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Sugar label="Sugar" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Fiber label="Fiber" width_class=w_nutr sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <SortableHeader col=SortColumn::Salt label="Salt" width_class=w_salt sort_column=sort_column sort_direction=sort_direction on_click=on_header_click.clone() />
-                            <th class=format!("px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}", w_store)>"Store"</th>
-                            <Show when=move || auth.is_authenticated.get()>
-                                <th class=format!("px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}", w_actions)></th>
-                            </Show>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200">
-                        <For
-                            each=get_sorted_ingredients
-                            key=|ing| ing.id.unwrap_or(0)
-                            let:ing
-                        >
-                            {
-                                // Create separate clones for each closure that needs the ingredient
-                                let ing_cal = ing.clone();
-                                let ing_protein = ing.clone();
-                                let ing_fat = ing.clone();
-                                let ing_sat_fat = ing.clone();
-                                let ing_carbs = ing.clone();
-                                let ing_sugar = ing.clone();
-                                let ing_fiber = ing.clone();
-                                let ing_salt = ing.clone();
-                                let ing_for_edit = ing.clone();
-                                let on_edit = on_edit.clone();
-                                view! {
-                                    <tr class="hover:bg-slate-50">
-                                        <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name.clone()}</td>
-                                        <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
-                                        <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };
-                                                format!("{:.0} kcal", cal)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_protein.per_calorie(ing_protein.protein) } else { ing_protein.protein };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_fat.per_calorie(ing_fat.fat) } else { ing_fat.fat };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_sat_fat.per_calorie(ing_sat_fat.saturated_fat) } else { ing_sat_fat.saturated_fat };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_carbs.per_calorie(ing_carbs.carbs) } else { ing_carbs.carbs };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_sugar.per_calorie(ing_sugar.sugar) } else { ing_sugar.sugar };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_fiber.per_calorie(ing_fiber.fiber) } else { ing_fiber.fiber };
-                                                format!("{:.1}g", val)
-                                            }}
-                                        </td>
-                                        <td class=cell_class>
-                                            {move || {
-                                                let val = if view_mode.get() == NutrientView::Per100kcal { ing_salt.per_calorie(ing_salt.salt) } else { ing_salt.salt };
-                                                format!("{:.0}mg", val)
-                                            }}
-                                        </td>
-                                        <td class=format!("{} truncate", cell_class)>{ing.store.clone()}</td>
-                                        <Show when=move || auth.is_authenticated.get()>
-                                            <td class=cell_class>
-                                                <button
-                                                    class="text-blue-600 hover:text-blue-800"
-                                                    title="Edit"
-                                                    on:click={
-                                                        let ing_for_edit = ing_for_edit.clone();
-                                                        let on_edit = on_edit.clone();
-                                                        move |_| on_edit(ing_for_edit.clone())
-                                                    }
-                                                >
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                    </svg>
-                                                </button>
-                                            </td>
-                                        </Show>
-                                    </tr>
-                                }
+      <div class="mb-8">
+        <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
+        <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
+          <table class="w-full table-fixed divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <SortableHeader
+                  col=SortColumn::Name
+                  label="Ingredient"
+                  width_class=w_name
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::PackageSize
+                  label="Package"
+                  width_class=w_pkg
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Price
+                  label="Price"
+                  width_class=w_price
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Calories
+                  label="Calories"
+                  width_class=w_cal
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Protein
+                  label="Protein"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Fat
+                  label="Fat"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::SaturatedFat
+                  label="Sat. Fat"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Carbs
+                  label="Carbs"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Sugar
+                  label="Sugar"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Fiber
+                  label="Fiber"
+                  width_class=w_nutr
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <SortableHeader
+                  col=SortColumn::Salt
+                  label="Salt"
+                  width_class=w_salt
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  on_click=on_header_click.clone()
+                />
+                <th class=format!(
+                  "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                  w_store,
+                )>"Store"</th>
+                <Show when=move || auth.is_authenticated.get()>
+                  <th class=format!(
+                    "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                    w_actions,
+                  )></th>
+                </Show>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+              <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
+                {
+                  let ing_cal = ing.clone();
+                  let ing_protein = ing.clone();
+                  let ing_fat = ing.clone();
+                  let ing_sat_fat = ing.clone();
+                  let ing_carbs = ing.clone();
+                  let ing_sugar = ing.clone();
+                  let ing_fiber = ing.clone();
+                  let ing_salt = ing.clone();
+                  let ing_for_edit = ing.clone();
+                  let on_edit = on_edit.clone();
+                  // Create separate clones for each closure that needs the ingredient
+                  view! {
+                    <tr class="hover:bg-slate-50">
+                      <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name.clone()}</td>
+                      <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
+                      <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
+                      <td class=cell_class>
+                        {move || {
+                          let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };
+                          format!("{:.0} kcal", cal)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_protein.per_calorie(ing_protein.protein)
+                          } else {
+                            ing_protein.protein
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_fat.per_calorie(ing_fat.fat)
+                          } else {
+                            ing_fat.fat
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_sat_fat.per_calorie(ing_sat_fat.saturated_fat)
+                          } else {
+                            ing_sat_fat.saturated_fat
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_carbs.per_calorie(ing_carbs.carbs)
+                          } else {
+                            ing_carbs.carbs
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_sugar.per_calorie(ing_sugar.sugar)
+                          } else {
+                            ing_sugar.sugar
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_fiber.per_calorie(ing_fiber.fiber)
+                          } else {
+                            ing_fiber.fiber
+                          };
+                          format!("{:.1}g", val)
+                        }}
+                      </td>
+                      <td class=cell_class>
+                        {move || {
+                          let val = if view_mode.get() == NutrientView::Per100kcal {
+                            ing_salt.per_calorie(ing_salt.salt)
+                          } else {
+                            ing_salt.salt
+                          };
+                          format!("{:.0}mg", val)
+                        }}
+                      </td>
+                      <td class=format!("{} truncate", cell_class)>{ing.store.clone()}</td>
+                      <Show when=move || auth.is_authenticated.get()>
+                        <td class=cell_class>
+                          <button
+                            class="text-blue-600 hover:text-blue-800"
+                            title="Edit"
+                            on:click={
+                              let ing_for_edit = ing_for_edit.clone();
+                              let on_edit = on_edit.clone();
+                              move |_| on_edit(ing_for_edit.clone())
                             }
-                        </For>
-                    </tbody>
-                </table>
-            </div>
-            <p class="mt-2 text-xs text-slate-500">
-                {move || {
-                    let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
-                    format!("* Nutrient values shown {}", suffix)
-                }}
-            </p>
+                          >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                        </td>
+                      </Show>
+                    </tr>
+                  }
+                }
+              </For>
+            </tbody>
+          </table>
         </div>
+        <p class="mt-2 text-xs text-slate-500">
+          {move || {
+            let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
+            format!("* Nutrient values shown {}", suffix)
+          }}
+        </p>
+      </div>
     }
 }
 
@@ -1364,123 +1470,125 @@ pub fn Ingredients() -> impl IntoView {
     };
 
     view! {
-        <div class="mx-auto max-w-7xl py-6">
-            <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
-                <h2 class="text-3xl font-bold text-slate-900">"Ingredient List"</h2>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <Show when=move || auth.is_authenticated.get()>
-                        <button
-                            class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-                            on:click=handle_new
-                        >
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            "New Ingredient"
-                        </button>
-                    </Show>
-                    <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
-                        <span class="text-sm font-medium text-slate-700">"View nutrients:"</span>
-                        <button
-                            class=move || {
-                                let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
-                                if view_mode.get() == NutrientView::Per100g {
-                                    format!("{} bg-blue-600 text-white", base)
-                                } else {
-                                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
-                                }
-                            }
-                            on:click=move |_| set_view_mode.set(NutrientView::Per100g)
-                        >
-                            "per 100g"
-                        </button>
-                        <button
-                            class=move || {
-                                let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
-                                if view_mode.get() == NutrientView::Per100kcal {
-                                    format!("{} bg-blue-600 text-white", base)
-                                } else {
-                                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
-                                }
-                            }
-                            on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
-                        >
-                            "per 100kcal"
-                        </button>
-                    </div>
-                </div>
+      <div class="mx-auto max-w-7xl py-6">
+        <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
+          <h2 class="text-3xl font-bold text-slate-900">"Ingredient List"</h2>
+          <div class="flex items-center gap-3 flex-wrap">
+            <Show when=move || auth.is_authenticated.get()>
+              <button
+                class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                on:click=handle_new
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                "New Ingredient"
+              </button>
+            </Show>
+            <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
+              <span class="text-sm font-medium text-slate-700">"View nutrients:"</span>
+              <button
+                class=move || {
+                  let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                  if view_mode.get() == NutrientView::Per100g {
+                    format!("{} bg-blue-600 text-white", base)
+                  } else {
+                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                  }
+                }
+                on:click=move |_| set_view_mode.set(NutrientView::Per100g)
+              >
+                "per 100g"
+              </button>
+              <button
+                class=move || {
+                  let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                  if view_mode.get() == NutrientView::Per100kcal {
+                    format!("{} bg-blue-600 text-white", base)
+                  } else {
+                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                  }
+                }
+                on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
+              >
+                "per 100kcal"
+              </button>
             </div>
-
-            <Suspense fallback=move || view! { <p class="text-slate-600">"Loading ingredients..."</p> }>
-                {move || {
-                    ingredients_resource.get().map(|result| {
-                        match result {
-                            Ok(ings) => {
-                                let (ingredients, _) = signal(ings);
-                                view! {
-                                    <IngredientTable
-                                        title=IngredientCategory::Protein.title()
-                                        category=IngredientCategory::Protein
-                                        ingredients=ingredients
-                                        view_mode=view_mode
-                                        sort_column=sort_column
-                                        sort_direction=sort_direction
-                                        on_header_click=handle_header_click.clone()
-                                        on_edit=handle_edit.clone()
-                                    />
-
-                                    <IngredientTable
-                                        title=IngredientCategory::Carbs.title()
-                                        category=IngredientCategory::Carbs
-                                        ingredients=ingredients
-                                        view_mode=view_mode
-                                        sort_column=sort_column
-                                        sort_direction=sort_direction
-                                        on_header_click=handle_header_click.clone()
-                                        on_edit=handle_edit.clone()
-                                    />
-
-                                    <IngredientTable
-                                        title=IngredientCategory::Veggies.title()
-                                        category=IngredientCategory::Veggies
-                                        ingredients=ingredients
-                                        view_mode=view_mode
-                                        sort_column=sort_column
-                                        sort_direction=sort_direction
-                                        on_header_click=handle_header_click.clone()
-                                        on_edit=handle_edit.clone()
-                                    />
-
-                                    <IngredientTable
-                                        title=IngredientCategory::Other.title()
-                                        category=IngredientCategory::Other
-                                        ingredients=ingredients
-                                        view_mode=view_mode
-                                        sort_column=sort_column
-                                        sort_direction=sort_direction
-                                        on_header_click=handle_header_click
-                                        on_edit=handle_edit.clone()
-                                    />
-                                }.into_any()
-                            }
-                            Err(e) => {
-                                view! {
-                                    <div class="rounded bg-red-100 px-4 py-3 text-red-700">
-                                        <p class="font-medium">"Failed to load ingredients"</p>
-                                        <p class="text-sm">{e.to_string()}</p>
-                                    </div>
-                                }.into_any()
-                            }
-                        }
-                    })
-                }}
-            </Suspense>
-
-            <IngredientModal
-                show=show_modal
-                editing=editing_ingredient
-                on_save=refetch
-            />
+          </div>
         </div>
+
+        <Suspense fallback=move || {
+          view! { <p class="text-slate-600">"Loading ingredients..."</p> }
+        }>
+          {move || {
+            ingredients_resource
+              .get()
+              .map(|result| {
+                match result {
+                  Ok(ings) => {
+                    let (ingredients, _) = signal(ings);
+                    view! {
+                      <IngredientTable
+                        title=IngredientCategory::Protein.title()
+                        category=IngredientCategory::Protein
+                        ingredients=ingredients
+                        view_mode=view_mode
+                        sort_column=sort_column
+                        sort_direction=sort_direction
+                        on_header_click=handle_header_click
+                        on_edit=handle_edit
+                      />
+
+                      <IngredientTable
+                        title=IngredientCategory::Carbs.title()
+                        category=IngredientCategory::Carbs
+                        ingredients=ingredients
+                        view_mode=view_mode
+                        sort_column=sort_column
+                        sort_direction=sort_direction
+                        on_header_click=handle_header_click
+                        on_edit=handle_edit
+                      />
+
+                      <IngredientTable
+                        title=IngredientCategory::Veggies.title()
+                        category=IngredientCategory::Veggies
+                        ingredients=ingredients
+                        view_mode=view_mode
+                        sort_column=sort_column
+                        sort_direction=sort_direction
+                        on_header_click=handle_header_click
+                        on_edit=handle_edit
+                      />
+
+                      <IngredientTable
+                        title=IngredientCategory::Other.title()
+                        category=IngredientCategory::Other
+                        ingredients=ingredients
+                        view_mode=view_mode
+                        sort_column=sort_column
+                        sort_direction=sort_direction
+                        on_header_click=handle_header_click
+                        on_edit=handle_edit
+                      />
+                    }
+                      .into_any()
+                  }
+                  Err(e) => {
+                    view! {
+                      <div class="rounded bg-red-100 px-4 py-3 text-red-700">
+                        <p class="font-medium">"Failed to load ingredients"</p>
+                        <p class="text-sm">{e.to_string()}</p>
+                      </div>
+                    }
+                      .into_any()
+                  }
+                }
+              })
+          }}
+        </Suspense>
+
+        <IngredientModal show=show_modal editing=editing_ingredient on_save=refetch />
+      </div>
     }
 }

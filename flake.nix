@@ -108,6 +108,7 @@
           nativeBuildInputs = [
             wasmBindgenCli
             pkgs.binaryen
+            pkgs.esbuild
           ];
           installPhase = ''
             runHook preInstall
@@ -127,6 +128,9 @@
               --enable-mutable-globals \
               --enable-sign-ext \
               --enable-nontrapping-float-to-int
+            # Minify client.js
+            esbuild "$out_pkg/client.js" --minify --outfile="$out_pkg/client.min.js"
+            mv "$out_pkg/client.min.js" "$out_pkg/client.js"
             runHook postInstall
           '';
         });
@@ -297,6 +301,7 @@
           rustc
           rustfmt
           clippy
+          leptosfmt
           wasm-pack
           binaryen
           nodejs_20
@@ -393,6 +398,18 @@
           ${alejandra.packages.${system}.default}/bin/alejandra --check ${./.}
           touch $out
         '';
+        leptosfmt = pkgs.runCommand "leptosfmt-check" {} ''
+          ${pkgs.leptosfmt}/bin/leptosfmt --config-file ${./leptosfmt.toml} --check ${./.}/crates
+          touch $out
+        '';
+        cargoFmt = craneLib.cargoFmt {
+          inherit src;
+        };
+        cargoClippy = craneLib.cargoClippy {
+          inherit src;
+          cargoArtifacts = craneLib.buildDepsOnly {inherit src;};
+          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        };
       };
     });
 }

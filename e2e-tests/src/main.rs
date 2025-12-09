@@ -145,14 +145,18 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
     }
 
     // Check for table headers which should be present even without data
-    let has_table_headers = body.contains("Proteins") 
-        || body.contains("Carbs") 
+    let has_table_headers = body.contains("Proteins")
+        || body.contains("Carbs")
         || body.contains("Vegetables")
         || body.contains("Other");
 
     if !has_table_headers {
         // Print a snippet of the body for debugging
-        let snippet = if body.len() > 500 { &body[..500] } else { &body };
+        let snippet = if body.len() > 500 {
+            &body[..500]
+        } else {
+            &body
+        };
         anyhow::bail!(
             "Ingredients page should contain category tables (Proteins, Carbs, Vegetables, Other). Page length: {} bytes. Snippet: {}...",
             body.len(),
