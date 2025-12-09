@@ -297,6 +297,7 @@
           rustc
           rustfmt
           clippy
+          leptosfmt
           wasm-pack
           binaryen
           nodejs_20
@@ -391,6 +392,10 @@
       checks = {
         alejandra = pkgs.runCommand "alejandra-check" {} ''
           ${alejandra.packages.${system}.default}/bin/alejandra --check ${./.}
+          touch $out
+        '';
+        leptosfmt = pkgs.runCommand "leptosfmt-check" {} ''
+          ${pkgs.leptosfmt}/bin/leptosfmt --config-file ${./leptosfmt.toml} --check ${./.}/crates
           touch $out
         '';
       };
