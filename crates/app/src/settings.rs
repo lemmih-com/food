@@ -205,6 +205,7 @@ fn DailyGoals(
             <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Day"</label>
             <input
               type="number"
+              attr:data-test="settings-calories"
               prop:value=move || daily_calories.get()
               on:input=move |ev| {
                 if let Ok(val) = event_target_value(&ev).parse::<i32>() {
@@ -307,6 +308,8 @@ fn MacroInputRow(
     color_class: &'static str,
     border_color_class: &'static str,
     bg_color_class: &'static str,
+    pct_data_test: &'static str,
+    grams_data_test: &'static str,
     pct: ReadSignal<i32>,
     grams: Memo<i32>,
     locked_macro: ReadSignal<Option<Macro>>,
@@ -341,6 +344,7 @@ fn MacroInputRow(
           type="number"
           min="5"
           max="90"
+          attr:data-test=pct_data_test
           prop:value=move || pct.get()
           on:input={
             let adjust = adjust_macros_pct.clone();
@@ -356,6 +360,7 @@ fn MacroInputRow(
         <input
           type="number"
           min="0"
+          attr:data-test=grams_data_test
           prop:value=move || grams.get()
           on:input={
             let adjust = adjust_macros_grams.clone();
@@ -560,6 +565,8 @@ fn MacroDistribution(
               color_class="bg-blue-600"
               border_color_class="border-blue-500"
               bg_color_class="bg-blue-50"
+          pct_data_test="settings-protein-pct"
+          grams_data_test="settings-protein-g"
               pct=protein_pct
               grams=protein_grams
               locked_macro=locked_macro
@@ -574,6 +581,8 @@ fn MacroDistribution(
               color_class="bg-green-600"
               border_color_class="border-green-500"
               bg_color_class="bg-green-50"
+          pct_data_test="settings-carbs-pct"
+          grams_data_test="settings-carbs-g"
               pct=carbs_pct
               grams=carbs_grams
               locked_macro=locked_macro
@@ -588,6 +597,8 @@ fn MacroDistribution(
               color_class="bg-orange-600"
               border_color_class="border-orange-500"
               bg_color_class="bg-orange-50"
+          pct_data_test="settings-fat-pct"
+          grams_data_test="settings-fat-g"
               pct=fat_pct
               grams=fat_grams
               locked_macro=locked_macro
@@ -638,6 +649,7 @@ fn DailyLimits(
                 <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
                 <input
                   type="number"
+              attr:data-test="settings-sodium-mg"
                   prop:value=move || sodium_mg.get()
                   on:input=move |ev| {
                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
@@ -674,6 +686,7 @@ fn DailyLimits(
                 <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
                 <input
                   type="number"
+              attr:data-test="settings-satfat-g"
                   prop:value=move || sat_fat_grams.get()
                   on:input=move |ev| {
                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
