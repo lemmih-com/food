@@ -6,16 +6,15 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use crate::auth::AdminAuthButton;
-use crate::icons::{Icon, IconName};
 
 #[component]
 pub fn Navigation() -> impl IntoView {
     let (menu_open, set_menu_open) = signal(false);
-    let links: [(&str, &str, IconName); 4] = [
-        ("/", "Food Log", IconName::House),
-        ("/ingredients", "Ingredients", IconName::ShoppingCart),
-        ("/recipes", "Recipes", IconName::ChefHat),
-        ("/settings", "Settings", IconName::Gear),
+    let links: [(&str, &str); 4] = [
+        ("/", "Food Log"),
+        ("/ingredients", "Ingredients"),
+        ("/recipes", "Recipes"),
+        ("/settings", "Settings"),
     ];
 
     view! {
@@ -27,10 +26,9 @@ pub fn Navigation() -> impl IntoView {
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
-                  .map(|&(href, label, icon)| {
+                  .map(|&(href, label)| {
                     view! {
-                      <A href=href attr:class="flex items-center gap-2 rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        <Icon name=icon class="h-4 w-4" />
+                      <A href=href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
                         {label}
                       </A>
                     }
@@ -93,10 +91,9 @@ pub fn Navigation() -> impl IntoView {
               <div class="space-y-1">
                 {links
                   .iter()
-                  .map(|&(href, label, icon)| {
+                  .map(|&(href, label)| {
                     view! {
-                      <A href=href attr:class="flex items-center gap-2 rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        <Icon name=icon class="h-4 w-4" />
+                      <A href=href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
                         {label}
                       </A>
                     }
