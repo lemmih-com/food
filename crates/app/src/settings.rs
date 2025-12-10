@@ -565,8 +565,8 @@ fn MacroDistribution(
               color_class="bg-blue-600"
               border_color_class="border-blue-500"
               bg_color_class="bg-blue-50"
-          pct_data_test="settings-protein-pct"
-          grams_data_test="settings-protein-g"
+              pct_data_test="settings-protein-pct"
+              grams_data_test="settings-protein-g"
               pct=protein_pct
               grams=protein_grams
               locked_macro=locked_macro
@@ -581,8 +581,8 @@ fn MacroDistribution(
               color_class="bg-green-600"
               border_color_class="border-green-500"
               bg_color_class="bg-green-50"
-          pct_data_test="settings-carbs-pct"
-          grams_data_test="settings-carbs-g"
+              pct_data_test="settings-carbs-pct"
+              grams_data_test="settings-carbs-g"
               pct=carbs_pct
               grams=carbs_grams
               locked_macro=locked_macro
@@ -597,8 +597,8 @@ fn MacroDistribution(
               color_class="bg-orange-600"
               border_color_class="border-orange-500"
               bg_color_class="bg-orange-50"
-          pct_data_test="settings-fat-pct"
-          grams_data_test="settings-fat-g"
+              pct_data_test="settings-fat-pct"
+              grams_data_test="settings-fat-g"
               pct=fat_pct
               grams=fat_grams
               locked_macro=locked_macro
@@ -649,7 +649,7 @@ fn DailyLimits(
                 <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
                 <input
                   type="number"
-              attr:data-test="settings-sodium-mg"
+                  attr:data-test="settings-sodium-mg"
                   prop:value=move || sodium_mg.get()
                   on:input=move |ev| {
                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
@@ -686,7 +686,7 @@ fn DailyLimits(
                 <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
                 <input
                   type="number"
-              attr:data-test="settings-satfat-g"
+                  attr:data-test="settings-satfat-g"
                   prop:value=move || sat_fat_grams.get()
                   on:input=move |ev| {
                     if let Ok(val) = event_target_value(&ev).parse::<i32>() {
