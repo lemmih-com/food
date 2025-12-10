@@ -1051,12 +1051,12 @@ fn RecipeCard(
     let instructions = recipe.instructions.clone();
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
         <div class="mb-4 flex items-start justify-between">
           <div>
-            <h3 class="text-xl font-bold text-slate-900">{recipe_name}</h3>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-slate-100">{recipe_name}</h3>
             <Show when=move || has_description>
-              <p class="mt-1 text-sm text-slate-600">{recipe_desc.clone()}</p>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{recipe_desc.clone()}</p>
             </Show>
           </div>
           <Show when=move || is_authenticated.get()>
@@ -1081,7 +1081,7 @@ fn RecipeCard(
           </Show>
         </div>
 
-        <div class="mb-4 flex flex-wrap gap-4 text-sm text-slate-600">
+        <div class="mb-4 flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
           <span>{format!("Servings: {}", servings)}</span>
           <Show when=move || { prep > 0 }>
             <span>{format!("Prep: {}min", prep)}</span>
@@ -1096,8 +1096,8 @@ fn RecipeCard(
 
         <Show when=move || has_ingredients>
           <div class="mb-4">
-            <h4 class="font-semibold text-slate-900 mb-2">"Ingredients:"</h4>
-            <ul class="list-inside list-disc space-y-1 text-slate-700">
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 mb-2">"Ingredients:"</h4>
+            <ul class="list-inside list-disc space-y-1 text-slate-700 dark:text-slate-300">
               {ingredients
                 .iter()
                 .map(|ing| {
@@ -1115,15 +1115,15 @@ fn RecipeCard(
 
         <Show when=move || has_instructions>
           <div class="mb-4">
-            <h4 class="font-semibold text-slate-900 mb-2">"Instructions:"</h4>
-            <ol class="list-inside list-decimal space-y-1 text-slate-700">
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 mb-2">"Instructions:"</h4>
+            <ol class="list-inside list-decimal space-y-1 text-slate-700 dark:text-slate-300">
               {instructions.iter().map(|inst| view! { <li>{inst.clone()}</li> }).collect_view()}
             </ol>
           </div>
         </Show>
 
-        <div class="rounded bg-slate-50 p-3">
-          <p class="text-sm font-medium text-slate-900">
+        <div class="rounded bg-slate-50 dark:bg-slate-700 p-3">
+          <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
             {format!(
               "Nutrition per serving: {:.0} kcal | {:.1}g protein | {:.1}g carbs | {:.1}g fat",
               nutrition.calories,
@@ -1132,7 +1132,7 @@ fn RecipeCard(
               nutrition.fat,
             )}
           </p>
-          <p class="text-sm text-slate-600 mt-1">
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {format!(
               "Sat. fat: {:.1}g | Sugar: {:.1}g | Fiber: {:.1}g | Salt: {:.0}mg",
               nutrition.saturated_fat,
@@ -1181,7 +1181,7 @@ pub fn Recipes() -> impl IntoView {
     view! {
       <div class="mx-auto max-w-7xl py-6">
         <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
-          <h2 class="text-3xl font-bold text-slate-900">"Recipes"</h2>
+          <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">"Recipes"</h2>
           <Show when=move || auth.is_authenticated.get()>
             <button
               class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
@@ -1196,7 +1196,7 @@ pub fn Recipes() -> impl IntoView {
         </div>
 
         <Suspense fallback=move || {
-          view! { <p class="text-slate-600">"Loading recipes..."</p> }
+          view! { <p class="text-slate-600 dark:text-slate-400">"Loading recipes..."</p> }
         }>
           {move || {
             let recipes_result = recipes_resource.get();
@@ -1209,9 +1209,11 @@ pub fn Recipes() -> impl IntoView {
 
                   view! {
                     <div class="text-center py-12">
-                      <p class="text-slate-600 mb-4">"No recipes yet."</p>
+                      <p class="text-slate-600 dark:text-slate-400 mb-4">"No recipes yet."</p>
                       <Show when=move || auth.is_authenticated.get()>
-                        <p class="text-slate-500 text-sm">"Click \"New Recipe\" to create your first recipe."</p>
+                        <p class="text-slate-500 dark:text-slate-500 text-sm">
+                          "Click \"New Recipe\" to create your first recipe."
+                        </p>
                       </Show>
                     </div>
                     <RecipeModal

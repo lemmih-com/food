@@ -37,7 +37,7 @@ pub use recipes::{CreateRecipe, DeleteRecipe, GetRecipes, Recipe, UpdateRecipe};
 
 use auth::PinModal;
 use ingredients::Ingredients;
-use pages::{Home, Navigation};
+use pages::{DarkMode, Home, Navigation};
 use recipes::Recipes;
 use settings::Settings;
 
@@ -50,11 +50,16 @@ pub fn App() -> impl IntoView {
     auth.init();
     provide_context(auth);
 
+    // Initialize dark mode context
+    let dark_mode = DarkMode::new();
+    dark_mode.init();
+    provide_context(dark_mode);
+
     view! {
       <Router>
         <Navigation />
         <PinModal />
-        <main class="min-h-screen bg-slate-100 px-4">
+        <main class="min-h-screen bg-slate-100 px-4 dark:bg-slate-900 transition-colors">
           <Routes fallback=|| "Not found">
             <Route path=path!("/") view=Home />
             <Route path=path!("/ingredients") view=Ingredients />
@@ -79,7 +84,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
           <MetaTags />
           <title>"food.lemmih.com"</title>
         </head>
-        <body class="bg-slate-100 text-slate-900">
+        <body class="bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors">
           <App />
         </body>
       </html>
