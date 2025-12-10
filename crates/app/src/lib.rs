@@ -31,6 +31,11 @@ pub use ingredients::{
     CreateIngredient, DeleteIngredient, GetIngredients, Ingredient, IngredientCategory,
     UpdateIngredient,
 };
+// Re-export recipe server functions
+pub use recipes::{
+    DeleteRecipe, GetRecipes, Recipe, RecipeIngredient, RecipeIngredientInput, RecipeInput,
+    UpsertRecipe,
+};
 
 use auth::PinModal;
 use ingredients::Ingredients;

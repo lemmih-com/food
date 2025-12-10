@@ -1,0 +1,14 @@
+1765309933688	geckodriver	INFO	Listening on 127.0.0.1:4444
+1765309938774	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" "/Applications/Firefox. ... e" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/7l/kqhb_nys1sx61vrkl5_ky4f40000gn/T/rust_mozprofileivNWOF"
+*** You are running in headless mode.
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+1765309939315	Marionette	INFO	Marionette enabled
+1765309939441	Marionette	INFO	Listening on port 53030
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+1765309949357	Marionette	INFO	Stopped listening on port 53030
+console.error: "Failed to fetch https://spocs.getpocket.com/user:" "NetworkError when attempting to fetch resource."
+console.error: (new TypeError("NetworkError when attempting to fetch resource.", ""))
+console.error: (new Error("OHTTP was configured for https://ads.mozilla.org/v1/delete_user but we couldn't fetch a valid config", "moz-src:///browser/modules/ContextId.sys.mjs", 234))
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://gre/modules/ObliviousHTTP.sys.mjs, line 117: NS_ERROR_XPC_CANT_CONVERT_PRIMITIVE_TO_ARRAY: Cannot convert primitive JavaScript value into an array arg 2 [nsIObliviousHttpService.newChannel]

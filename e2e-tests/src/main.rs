@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use std::time::Duration;
+use thirtyfour::components::SelectElement;
 use thirtyfour::prelude::*;
 
 struct TestRunner {
@@ -354,6 +355,235 @@ async fn test_css_is_valid_tailwind(runner: &TestRunner) -> Result<()> {
     Ok(())
 }
 
+// ----------------------------------------------------------------------------
+// Recipe CRUD flow (requires unlock)
+// ----------------------------------------------------------------------------
+
+async fn unlock_admin(runner: &TestRunner) -> Result<()> {
+    // If already unlocked, the new recipe button will be present
+    if runner
+        .driver
+        .find_elements(By::Css(r#"button[data-test="recipe-new-button"]"#))
+        .await?
+        .is_empty()
+    {
+        let unlock_btn = runner
+            .driver
+            .find_element(By::XPath(r#"//button[contains(., 'Unlock')]"#))
+            .await
+            .context("finding unlock button")?;
+        unlock_btn.click().await?;
+
+        let pin = std::env::var("ADMIN_PIN").unwrap_or_else(|_| "1234".to_string());
+        for (idx, ch) in pin.chars().take(4).enumerate() {
+            let input = runner
+                .driver
+                .find_element(By::Id(&format!("pin-digit-{}", idx)))
+                .await
+                .context("finding PIN input")?;
+            input.clear().await?;
+            input.send_keys(ch.to_string()).await?;
+        }
+
+        tokio::time::sleep(Duration::from_millis(400)).await;
+    }
+
+    // Wait until the button shows up
+    for _ in 0..10 {
+        if !runner
+            .driver
+            .find_elements(By::Css(r#"button[data-test="recipe-new-button"]"#))
+            .await?
+            .is_empty()
+        {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+    }
+
+    anyhow::bail!("Failed to unlock admin mode for recipes")
+}
+
+async fn go_to_recipes(runner: &TestRunner) -> Result<()> {
+    runner
+        .driver
+        .goto(&format!("{}/recipes", runner.base_url))
+        .await?;
+    tokio::time::sleep(Duration::from_millis(800)).await;
+    Ok(())
+}
+
+async fn fill_first_ingredient(runner: &TestRunner) -> Result<()> {
+    for _ in 0..10 {
+        let select_el = runner
+            .driver
+            .find_element(By::Css(r#"select[data-test="recipe-ingredient-select-0"]"#))
+            .await?;
+        let select = SelectElement::new(&select_el)?;
+        let options = select.options().await?;
+        if options.len() > 1 {
+            select.select_by_index(1).await?; // first non-empty option
+
+            // Use 1 package and 50 extra grams to exercise both inputs
+            let pkg_input = runner
+                .driver
+                .find_element(By::Css(
+                    r#"input[data-test="recipe-ingredient-packages-0"]"#,
+                ))
+                .await?;
+            pkg_input.clear().await?;
+            pkg_input.send_keys("1").await?;
+
+            let grams_input = runner
+                .driver
+                .find_element(By::Css(r#"input[data-test="recipe-ingredient-grams-0"]"#))
+                .await?;
+            grams_input.clear().await?;
+            grams_input.send_keys("50").await?;
+
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(200)).await;
+    }
+
+    anyhow::bail!("No ingredient options available for recipe form")
+}
+
+async fn create_recipe(runner: &TestRunner, name: &str) -> Result<()> {
+    runner
+        .driver
+        .find_element(By::Css(r#"button[data-test="recipe-new-button"]"#))
+        .await?
+        .click()
+        .await?;
+
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let name_input = runner
+        .driver
+        .find_element(By::Css(r#"input[data-test="recipe-name"]"#))
+        .await?;
+    name_input.clear().await?;
+    name_input.send_keys(name).await?;
+
+    let servings = runner
+        .driver
+        .find_element(By::Css(r#"input[data-test="recipe-servings"]"#))
+        .await?;
+    servings.clear().await?;
+    servings.send_keys("2").await?;
+
+    let tags = runner
+        .driver
+        .find_element(By::Css(r#"input[data-test="recipe-tags"]"#))
+        .await?;
+    tags.clear().await?;
+    tags.send_keys("Test, Quick").await?;
+
+    let instructions = runner
+        .driver
+        .find_element(By::Css(r#"textarea[data-test="recipe-instructions"]"#))
+        .await?;
+    instructions.clear().await?;
+    instructions
+        .send_keys("Step one\nStep two\nServe and enjoy")
+        .await?;
+
+    fill_first_ingredient(runner).await?;
+
+    runner
+        .driver
+        .find_element(By::Css(r#"button[data-test="recipe-save"]"#))
+        .await?
+        .click()
+        .await?;
+
+    // Wait for card to appear
+    for _ in 0..10 {
+        let body = runner.driver.source().await?;
+        if body.contains(name) {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+    }
+
+    anyhow::bail!("Recipe card did not appear after save")
+}
+
+async fn edit_recipe(runner: &TestRunner, original: &str, updated: &str) -> Result<()> {
+    // Click the first edit button
+    runner
+        .driver
+        .find_element(By::Css(r#"button[data-test^="recipe-edit-"]"#))
+        .await?
+        .click()
+        .await?;
+
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let name_input = runner
+        .driver
+        .find_element(By::Css(r#"input[data-test="recipe-name"]"#))
+        .await?;
+    name_input.clear().await?;
+    name_input.send_keys(updated).await?;
+
+    runner
+        .driver
+        .find_element(By::Css(r#"button[data-test="recipe-save"]"#))
+        .await?
+        .click()
+        .await?;
+
+    for _ in 0..10 {
+        let body = runner.driver.source().await?;
+        if body.contains(updated) && !body.contains(original) {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+    }
+
+    anyhow::bail!("Updated recipe title not found after edit")
+}
+
+async fn delete_recipe(runner: &TestRunner, name: &str) -> Result<()> {
+    runner
+        .driver
+        .find_element(By::Css(r#"button[data-test^="recipe-delete-"]"#))
+        .await?
+        .click()
+        .await?;
+
+    // Confirm dialog
+    if let Ok(alert) = runner.driver.switch_to().alert() {
+        alert.accept().await?;
+    }
+
+    for _ in 0..10 {
+        let body = runner.driver.source().await?;
+        if !body.contains(name) {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+    }
+
+    anyhow::bail!("Recipe still visible after delete")
+}
+
+async fn test_recipes_crud_flow(runner: &TestRunner) -> Result<()> {
+    go_to_recipes(runner).await?;
+    unlock_admin(runner).await?;
+
+    let name = "Test Recipe";
+    create_recipe(runner, name).await?;
+
+    let updated = "Updated Test Recipe";
+    edit_recipe(runner, name, updated).await?;
+    delete_recipe(runner, updated).await?;
+
+    Ok(())
+}
+
 /// Test: Macro distribution always sums to 100% after changing inputs
 async fn test_macro_distribution_sums_to_100(runner: &TestRunner) -> Result<()> {
     // Navigate to settings page
@@ -494,6 +724,7 @@ async fn main() -> Result<()> {
         "CSS contains Tailwind classes" => test_css_contains_tailwind_classes,
         "CSS is valid Tailwind output" => test_css_is_valid_tailwind,
         "Macro distribution sums to 100%" => test_macro_distribution_sums_to_100,
+        "Recipe CRUD flow works" => test_recipes_crud_flow,
     );
 
     // Explicitly quit WebDriver to avoid Tokio runtime shutdown panic

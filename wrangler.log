@@ -1,0 +1,63 @@
+
+ ⛅️ wrangler 4.50.0 (update available 4.53.0)
+─────────────────────────────────────────────
+[custom build] Running: nix build .#website -o .wrangler/dist
+[custom build] warning: Git tree '/Users/lemmih/coding/lemmih-com/food' has uncommitted changes
+[custom build] 
+Your Worker has access to the following bindings:
+Binding                                                   Resource                  Mode
+env.AUTH_TOKENS (e2e-auth-tokens)                         KV Namespace              local
+env.INGREDIENTS_DB (food-lemmih-com-ingredients-e2e)      D1 Database               local
+env.ASSETS                                                Assets                    local
+env.ADMIN_PIN ("1234")                                    Environment Variable      local
+
+The file src changed, restarting build...
+[custom build] Running: nix build .#website -o .wrangler/dist
+[custom build] warning: Git tree '/Users/lemmih/coding/lemmih-com/food' has uncommitted changes
+[custom build] 
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8787
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1musing deprecated parameters for the initialization function; pass a single object instead[0m
+
+
+fetch called for GET /
+[wrangler:info] GET / 200 OK (40ms)
+fetch called for GET /
+[wrangler:info] GET / 200 OK (2ms)
+[wrangler:info] GET /pkg/styles.css 200 OK (4ms)
+[wrangler:info] GET /pkg/client.js 200 OK (4ms)
+[wrangler:info] GET /pkg/client_bg.wasm 200 OK (4ms)
+[wrangler:info] GET /favicon.ico 200 OK (2ms)
+fetch called for GET /
+[wrangler:info] GET / 200 OK (3ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (2ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (2ms)
+fetch called for GET /ingredients
+[wrangler:info] GET /ingredients 200 OK (8ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (2ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (3ms)
+fetch called for GET /recipes
+[wrangler:info] GET /recipes 200 OK (9ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (2ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (2ms)
+fetch called for GET /settings
+[wrangler:info] GET /settings 200 OK (6ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (3ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (3ms)
+fetch called for GET /
+[wrangler:info] GET / 200 OK (13ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (3ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (4ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (2ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (2ms)
+fetch called for GET /settings
+[wrangler:info] GET /settings 200 OK (2ms)
+[wrangler:info] GET /pkg/styles.css 304 Not Modified (1ms)
+[wrangler:info] GET /pkg/client.js 304 Not Modified (2ms)
+[wrangler:info] GET /pkg/client_bg.wasm 304 Not Modified (2ms)
