@@ -23,5 +23,13 @@ target
 # Nix cache signing keys (private key must never be committed)
 cache-priv-key.pem
 
-# Nix build result symlink
+# Nix build result symlinks
 result
+result-*
+
+# Wrangler local state, build artifacts, and logs
+.wrangler/
+wrangler.log
+
+# Geckodriver logs (from e2e tests)
+geckodriver.log
