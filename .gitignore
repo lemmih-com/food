@@ -25,3 +25,9 @@ cache-priv-key.pem
 
 # Nix build result symlink
 result
+
+# E2E test artifacts
+.wrangler/
+geckodriver.log
+wrangler.log
+node_modules/

@@ -11,11 +11,11 @@ use crate::{auth::AdminAuthButton, Theme, ThemeState};
 pub fn Navigation() -> impl IntoView {
     let theme_state = expect_context::<ThemeState>();
     let (menu_open, set_menu_open) = signal(false);
-    let links: [(&str, &str); 4] = [
-        ("/", "Food Log"),
-        ("/ingredients", "Ingredients"),
-        ("/recipes", "Recipes"),
-        ("/settings", "Settings"),
+    let links: [(&str, &str, &str); 4] = [
+        ("/", "Food Log", "🍽️"),
+        ("/ingredients", "Ingredients", "🥕"),
+        ("/recipes", "Recipes", "📖"),
+        ("/settings", "Settings", "⚙️"),
     ];
     let is_dark = move || theme_state.theme.get() == Theme::Dark;
 
@@ -31,13 +31,16 @@ pub fn Navigation() -> impl IntoView {
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
-                  .map(|&(href, label)| {
+                  .map(|&(href, label, icon)| {
                     view! {
                       <A
                         href=href
-                        attr:class="rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
+                        attr:class="flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
                       >
-                        {label}
+                        <span aria-hidden="true" class="text-lg leading-none">
+                          {icon}
+                        </span>
+                        <span>{label}</span>
                       </A>
                     }
                   })
@@ -110,13 +113,16 @@ pub fn Navigation() -> impl IntoView {
               <div class="space-y-1">
                 {links
                   .iter()
-                  .map(|&(href, label)| {
+                  .map(|&(href, label, icon)| {
                     view! {
                       <A
                         href=href
-                        attr:class="block rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
+                        attr:class="flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
                       >
-                        {label}
+                        <span aria-hidden="true" class="text-lg leading-none">
+                          {icon}
+                        </span>
+                        <span>{label}</span>
                       </A>
                     }
                   })

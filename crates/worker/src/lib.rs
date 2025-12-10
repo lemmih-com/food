@@ -21,6 +21,11 @@ fn register() {
     server_fn::axum::register_explicit::<food_lemmih_com_app::CreateIngredient>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::UpdateIngredient>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::DeleteIngredient>();
+    // Recipe server functions
+    server_fn::axum::register_explicit::<food_lemmih_com_app::GetRecipes>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::CreateRecipe>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::UpdateRecipe>();
+    server_fn::axum::register_explicit::<food_lemmih_com_app::DeleteRecipe>();
 }
 
 fn router(env: Env) -> Router<()> {
