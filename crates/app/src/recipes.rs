@@ -1196,7 +1196,7 @@ fn RecipeModal(
                         saving.set(false);
                         error.set(Some(format!("Failed to save: {}", e)));
                     }
-                });
+                }
             });
         }
     };
