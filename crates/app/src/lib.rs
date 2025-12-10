@@ -32,6 +32,9 @@ pub use ingredients::{
     UpdateIngredient,
 };
 
+// Re-export recipe types for worker registration
+pub use recipes::{CreateRecipe, DeleteRecipe, GetRecipes, Recipe, UpdateRecipe};
+
 use auth::PinModal;
 use ingredients::Ingredients;
 use pages::{Home, Navigation};

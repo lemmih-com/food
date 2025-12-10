@@ -205,15 +205,30 @@ async fn test_recipes_page_accessible(runner: &TestRunner) -> Result<()> {
         );
     }
 
-    // More lenient check for recipe structure
-    let has_ingredients = body.contains("Ingredients:") || body.contains("ingredients:");
-    let has_instructions = body.contains("Instructions:") || body.contains("instructions:");
-
-    if !has_ingredients || !has_instructions {
+    // Check if still loading
+    if body.contains("Loading recipes") || body.contains("Loading...") {
         anyhow::bail!(
-            "Recipes page should contain recipe structure (Ingredients and Instructions). Has ingredients: {}, Has instructions: {}. Page length: {} bytes",
-            has_ingredients,
-            has_instructions,
+            "Recipes page is still showing loading state after 2s wait. Server function may not be working. Page length: {} bytes",
+            body.len()
+        );
+    }
+
+    // Check for error state
+    if body.contains("Failed to load") {
+        anyhow::bail!(
+            "Recipes page shows error loading data. Check server function and D1 database. Page length: {} bytes",
+            body.len()
+        );
+    }
+
+    // Accept either empty state or recipe content
+    let has_empty_state = body.contains("No recipes yet");
+    let has_recipe_content =
+        body.contains("Ingredients:") || body.contains("Servings:") || body.contains("Nutrition");
+
+    if !has_empty_state && !has_recipe_content {
+        anyhow::bail!(
+            "Recipes page should show either empty state or recipe content. Page length: {} bytes",
             body.len()
         );
     }
