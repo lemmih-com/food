@@ -166,7 +166,7 @@ fn PresetButtons(
     };
 
     view! {
-      <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
+      <div class="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
         <div class="flex flex-wrap gap-3">
           <button
@@ -205,7 +205,7 @@ fn DailyGoals(
     set_daily_calories: WriteSignal<i32>,
 ) -> impl IntoView {
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
         <div class="space-y-4">
           <div>
@@ -550,7 +550,7 @@ fn MacroDistribution(
     };
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
 
         <div class="flex flex-col md:flex-row gap-6">
@@ -634,7 +634,7 @@ fn DailyLimits(
     });
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
         <div class="space-y-4">
           // Salt/Sodium with linked inputs
@@ -720,7 +720,7 @@ fn DailyLimits(
 #[component]
 fn DailyMinimums(fiber_min: ReadSignal<i32>, set_fiber_min: WriteSignal<i32>) -> impl IntoView {
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Minimums"</h3>
         <div class="space-y-4">
           <div>

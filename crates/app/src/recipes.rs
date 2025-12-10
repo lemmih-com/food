@@ -173,9 +173,9 @@ fn RecipeCard(
     let meal_type = recipe.meal_type.to_string();
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-2xl font-bold text-slate-900">{recipe.name}</h3>
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{recipe.name}</h3>
           <button
             class=format!(
               "rounded px-3 py-1 text-sm font-medium cursor-pointer hover:opacity-80 {} {}",
@@ -191,7 +191,7 @@ fn RecipeCard(
           </button>
         </div>
         <div class="mb-4">
-          <p class="mb-2 text-sm text-slate-600">
+          <p class="mb-2 text-sm text-slate-600 dark:text-slate-400">
             {format!("Prep: {} | Cook: {} | Servings: {}", recipe.prep_time, recipe.cook_time, recipe.servings)}
           </p>
           <div class="flex flex-wrap gap-2">
@@ -227,16 +227,16 @@ fn RecipeCard(
               .collect_view()}
           </div>
         </div>
-        <h4 class="mb-2 font-semibold text-slate-900">"Ingredients:"</h4>
-        <ul class="mb-4 list-inside list-disc space-y-1 text-slate-700">
+        <h4 class="mb-2 font-semibold text-slate-900 dark:text-slate-100">"Ingredients:"</h4>
+        <ul class="mb-4 list-inside list-disc space-y-1 text-slate-700 dark:text-slate-200">
           {recipe.ingredients.iter().map(|ingredient| view! { <li>{*ingredient}</li> }).collect_view()}
         </ul>
-        <h4 class="mb-2 font-semibold text-slate-900">"Instructions:"</h4>
-        <ol class="list-inside list-decimal space-y-1 text-slate-700">
+        <h4 class="mb-2 font-semibold text-slate-900 dark:text-slate-100">"Instructions:"</h4>
+        <ol class="list-inside list-decimal space-y-1 text-slate-700 dark:text-slate-200">
           {recipe.instructions.iter().map(|instruction| view! { <li>{*instruction}</li> }).collect_view()}
         </ol>
-        <div class="mt-4 rounded bg-slate-50 p-3">
-          <p class="text-sm font-medium text-slate-900">
+        <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/70">
+          <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
             {format!(
               "Nutrition per serving: {} kcal | {}g protein | {}g carbs | {}g fat",
               recipe.nutrition.calories,
@@ -245,7 +245,7 @@ fn RecipeCard(
               recipe.nutrition.fat,
             )}
           </p>
-          <p class="text-sm text-slate-600 mt-1">
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {format!(
               "Sat. fat: {}g | Salt: {}g | Fiber: {}g",
               recipe.nutrition.sat_fat,
@@ -291,12 +291,12 @@ pub fn Recipes() -> impl IntoView {
 
     view! {
       <div class="mx-auto max-w-7xl py-6">
-        <h2 class="mb-6 text-3xl font-bold text-slate-900">"Recipes"</h2>
+        <h2 class="mb-6 text-3xl font-bold text-slate-900 dark:text-slate-100">"Recipes"</h2>
 
         // Active filters display
         <Show when=move || !active_filters.get().is_empty()>
           <div class="mb-4 flex flex-wrap items-center gap-2">
-            <span class="text-sm font-medium text-slate-600">"Active filters:"</span>
+            <span class="text-sm font-medium text-slate-600 dark:text-slate-400">"Active filters:"</span>
             <For
               each=move || active_filters.get()
               key=|tag| tag.clone()
@@ -305,7 +305,7 @@ pub fn Recipes() -> impl IntoView {
                 let tag_for_display = tag.clone();
                 view! {
                   <button
-                    class="inline-flex items-center gap-1 rounded bg-slate-200 px-2 py-1 text-sm text-slate-700 hover:bg-slate-300 cursor-pointer"
+                    class="inline-flex items-center gap-1 rounded bg-slate-200 px-2 py-1 text-sm text-slate-700 hover:bg-slate-300 cursor-pointer dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                     on:click=move |_| toggle_filter.run(tag_for_click.clone())
                   >
                     {tag_for_display}
@@ -315,7 +315,7 @@ pub fn Recipes() -> impl IntoView {
               }
             />
             <button
-              class="text-sm text-slate-500 hover:text-slate-700 underline cursor-pointer"
+              class="text-sm text-slate-500 hover:text-slate-700 underline cursor-pointer dark:text-slate-400 dark:hover:text-slate-200"
               on:click=move |_| set_active_filters.set(Vec::new())
             >
               "Clear all"
@@ -335,7 +335,9 @@ pub fn Recipes() -> impl IntoView {
 
         // Show message when no recipes match
         <Show when=move || filtered_recipes().is_empty()>
-          <div class="text-center py-8 text-slate-500">"No recipes match the selected filters."</div>
+          <div class="py-8 text-center text-slate-500 dark:text-slate-400">
+            "No recipes match the selected filters."
+          </div>
         </Show>
       </div>
     }

@@ -27,7 +27,7 @@ pub fn Navigation() -> impl IntoView {
         <div class="mx-auto max-w-7xl px-4">
           <div class="flex h-16 items-center justify-between">
             <div class="flex items-center gap-8">
-              <h1 class="text-xl font-bold tracking-tight">"food.lemmih.com"</h1>
+              <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">"food.lemmih.com"</h1>
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
@@ -148,17 +148,12 @@ fn ThemeToggle() -> impl IntoView {
         }
     };
 
-    let toggle_label = move || match theme_state.theme.get() {
-        Theme::Light => "Light mode",
-        Theme::Dark => "Dark mode",
-    };
-
     view! {
       <button
         type="button"
         class=move || {
           format!(
-            "group relative inline-flex items-center gap-3 rounded-full border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-400/70 {}",
+            "group relative inline-flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-400/70 {}",
             if is_dark() {
               "border-slate-700/80 bg-slate-900/90 text-slate-100 shadow-lg shadow-emerald-500/10 hover:-translate-y-0.5 hover:bg-slate-800"
             } else {
@@ -171,14 +166,14 @@ fn ThemeToggle() -> impl IntoView {
       >
         <div class=move || {
           format!(
-            "relative flex h-9 w-16 items-center overflow-hidden rounded-full transition-colors {}",
+            "relative flex h-8 w-14 items-center overflow-hidden rounded-full transition-colors {}",
             pill_classes(),
           )
         }>
           <span
             class=move || {
               format!(
-                "absolute left-2 flex h-5 w-5 items-center justify-center transition-opacity {}",
+                "absolute left-2 flex h-4 w-4 items-center justify-center transition-opacity {}",
                 if is_dark() { "opacity-0" } else { "opacity-100" },
               )
             }
@@ -204,7 +199,7 @@ fn ThemeToggle() -> impl IntoView {
           <span
             class=move || {
               format!(
-                "absolute right-2 flex h-5 w-5 items-center justify-center transition-opacity {}",
+                "absolute right-2 flex h-4 w-4 items-center justify-center transition-opacity {}",
                 if is_dark() { "opacity-100" } else { "opacity-0" },
               )
             }
@@ -222,9 +217,9 @@ fn ThemeToggle() -> impl IntoView {
           <div
             class=move || {
               format!(
-                "absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full shadow-md ring-1 transition-transform duration-200 {}",
+                "absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full shadow-md ring-1 transition-transform duration-200 {}",
                 if is_dark() {
-                  "translate-x-7 bg-slate-950 text-amber-200 ring-slate-700/70"
+                  "translate-x-6 bg-slate-950 text-amber-200 ring-slate-700/70"
                 } else {
                   "translate-x-0 bg-white text-amber-500 ring-white/40"
                 },
@@ -244,7 +239,6 @@ fn ThemeToggle() -> impl IntoView {
             </svg>
           </div>
         </div>
-        <span class="hidden pr-1 text-sm font-semibold sm:inline">{toggle_label}</span>
       </button>
     }
 }
@@ -253,59 +247,73 @@ fn ThemeToggle() -> impl IntoView {
 pub fn Home() -> impl IntoView {
     view! {
       <div class="mx-auto max-w-7xl py-6">
-        <h2 class="mb-6 text-3xl font-bold text-slate-900">"Food Log"</h2>
+        <h2 class="mb-6 text-3xl font-bold text-slate-900 dark:text-slate-100">"Food Log"</h2>
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div class="rounded-lg bg-white p-6 shadow-md">
-            <div class="mb-4 h-48 rounded bg-gradient-to-br from-orange-400 to-pink-400 flex items-center justify-center">
+          <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div class="mb-4 flex h-48 items-center justify-center rounded bg-gradient-to-br from-orange-400 to-pink-400">
               <span class="text-6xl">"🍕"</span>
             </div>
-            <h3 class="mb-2 text-xl font-semibold">"Margherita Pizza"</h3>
-            <p class="mb-2 text-sm text-slate-600">"Date: 2025-12-01"</p>
-            <div class="mb-3 flex gap-2">
-              <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800">"Dinner"</span>
-              <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-800">"750 kcal"</span>
+            <h3 class="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-100">"Margherita Pizza"</h3>
+            <p class="mb-2 text-sm text-slate-600 dark:text-slate-400">"Date: 2025-12-01"</p>
+            <div class="mb-3 flex gap-2 text-xs">
+              <span class="rounded bg-blue-100 px-2 py-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100">
+                "Dinner"
+              </span>
+              <span class="rounded bg-green-100 px-2 py-1 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-100">
+                "750 kcal"
+              </span>
             </div>
-            <p class="text-slate-700">
+            <p class="text-slate-700 dark:text-slate-200">
               "Delicious homemade pizza with fresh mozzarella and basil. Perfect crispy crust!"
             </p>
             <div class="mt-4 flex items-center justify-between text-sm">
-              <span class="text-slate-600">"Rating:"</span>
+              <span class="text-slate-600 dark:text-slate-400">"Rating:"</span>
               <span class="text-yellow-500">"⭐⭐⭐⭐⭐"</span>
             </div>
           </div>
 
-          <div class="rounded-lg bg-white p-6 shadow-md">
-            <div class="mb-4 h-48 rounded bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+          <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div class="mb-4 flex h-48 items-center justify-center rounded bg-gradient-to-br from-green-400 to-emerald-500">
               <span class="text-6xl">"🥗"</span>
             </div>
-            <h3 class="mb-2 text-xl font-semibold">"Caesar Salad"</h3>
-            <p class="mb-2 text-sm text-slate-600">"Date: 2025-12-02"</p>
-            <div class="mb-3 flex gap-2">
-              <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800">"Lunch"</span>
-              <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-800">"350 kcal"</span>
+            <h3 class="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-100">"Caesar Salad"</h3>
+            <p class="mb-2 text-sm text-slate-600 dark:text-slate-400">"Date: 2025-12-02"</p>
+            <div class="mb-3 flex gap-2 text-xs">
+              <span class="rounded bg-blue-100 px-2 py-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100">
+                "Lunch"
+              </span>
+              <span class="rounded bg-green-100 px-2 py-1 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-100">
+                "350 kcal"
+              </span>
             </div>
-            <p class="text-slate-700">
+            <p class="text-slate-700 dark:text-slate-200">
               "Fresh romaine with grilled chicken, parmesan, and homemade dressing. Very satisfying!"
             </p>
             <div class="mt-4 flex items-center justify-between text-sm">
-              <span class="text-slate-600">"Rating:"</span>
+              <span class="text-slate-600 dark:text-slate-400">"Rating:"</span>
               <span class="text-yellow-500">"⭐⭐⭐⭐"</span>
             </div>
           </div>
 
-          <div class="rounded-lg bg-white p-6 shadow-md">
-            <div class="mb-4 h-48 rounded bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
+          <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div class="mb-4 flex h-48 items-center justify-center rounded bg-gradient-to-br from-red-400 to-rose-500">
               <span class="text-6xl">"🍝"</span>
             </div>
-            <h3 class="mb-2 text-xl font-semibold">"Spaghetti Carbonara"</h3>
-            <p class="mb-2 text-sm text-slate-600">"Date: 2025-12-03"</p>
-            <div class="mb-3 flex gap-2">
-              <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800">"Dinner"</span>
-              <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-800">"650 kcal"</span>
+            <h3 class="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-100">"Spaghetti Carbonara"</h3>
+            <p class="mb-2 text-sm text-slate-600 dark:text-slate-400">"Date: 2025-12-03"</p>
+            <div class="mb-3 flex gap-2 text-xs">
+              <span class="rounded bg-blue-100 px-2 py-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100">
+                "Dinner"
+              </span>
+              <span class="rounded bg-green-100 px-2 py-1 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-100">
+                "650 kcal"
+              </span>
             </div>
-            <p class="text-slate-700">"Classic Italian pasta with eggs, pecorino, and guanciale. Rich and creamy!"</p>
+            <p class="text-slate-700 dark:text-slate-200">
+              "Classic Italian pasta with eggs, pecorino, and guanciale. Rich and creamy!"
+            </p>
             <div class="mt-4 flex items-center justify-between text-sm">
-              <span class="text-slate-600">"Rating:"</span>
+              <span class="text-slate-600 dark:text-slate-400">"Rating:"</span>
               <span class="text-yellow-500">"⭐⭐⭐⭐⭐"</span>
             </div>
           </div>

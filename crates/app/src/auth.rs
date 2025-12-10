@@ -417,11 +417,11 @@ fn PinModalContent(
           }
         }
       >
-        <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <div class="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-900">"Admin Access"</h2>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">"Admin Access"</h2>
             <button
-              class="text-slate-500 hover:text-slate-700"
+              class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               on:click={
                 let do_close = do_close.clone();
                 move |_| do_close()
@@ -433,7 +433,7 @@ fn PinModalContent(
             </button>
           </div>
 
-          <p class="mb-4 text-sm text-slate-600">"Enter your 4-digit admin PIN:"</p>
+          <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">"Enter your 4-digit admin PIN:"</p>
 
           <div class="mb-4 flex justify-center gap-3">
             {pin_digits
@@ -447,7 +447,7 @@ fn PinModalContent(
                     maxlength="1"
                     inputmode="numeric"
                     pattern="[0-9]*"
-                    class="h-14 w-12 rounded border border-slate-300 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="h-14 w-12 rounded border border-slate-300 bg-white text-center text-2xl text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     prop:value=move || digit.get()
                     on:input={
                       let do_submit = do_submit.clone();
@@ -541,7 +541,7 @@ fn UnlockButton() -> impl IntoView {
 
     view! {
       <button
-        class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
+        class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
         on:click=move |_| auth.open_modal()
       >
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

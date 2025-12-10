@@ -877,8 +877,8 @@ fn IngredientModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 mb-1";
+    let input_class = "w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500";
+    let label_class = "mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
     view! {
       <Show when=move || show.get()>
@@ -895,12 +895,15 @@ fn IngredientModal(
             }
           }
         >
-          <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl mx-4">
+          <div class="mx-4 w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-bold text-slate-900">
+              <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {move || if editing.get().is_some() { "Edit Ingredient" } else { "New Ingredient" }}
               </h2>
-              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+              <button
+                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                on:click=move |_| close()
+              >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -908,7 +911,7 @@ fn IngredientModal(
             </div>
 
             <Show when=move || error.get().is_some()>
-              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+              <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-900/40 dark:text-red-100">
                 {move || error.get().unwrap_or_default()}
               </div>
             </Show>
@@ -951,7 +954,9 @@ fn IngredientModal(
 
               // Nutrients section
               <div class="col-span-2">
-                <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Nutrients (per 100g)"</h3>
+                <h3 class="mb-2 mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  "Nutrients (per 100g)"
+                </h3>
               </div>
 
               <div>
@@ -1186,14 +1191,14 @@ fn IngredientTable(
     let w_store = "w-28"; // Store
     let w_actions = "w-16"; // Actions column
 
-    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700";
+    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700 dark:text-slate-200";
 
     view! {
       <div class="mb-8">
-        <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
-        <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
-          <table class="w-full table-fixed divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50">
+        <h3 class="mb-3 text-xl font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+        <div class="overflow-hidden overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
+          <table class="w-full table-fixed divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <thead class="bg-slate-50 dark:bg-slate-800/70">
               <tr>
                 <SortableHeader
                   col=SortColumn::Name
@@ -1284,18 +1289,18 @@ fn IngredientTable(
                   on_click=on_header_click.clone()
                 />
                 <th class=format!(
-                  "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                  "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 {}",
                   w_store,
                 )>"Store"</th>
                 <Show when=move || auth.is_authenticated.get()>
                   <th class=format!(
-                    "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                    "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 {}",
                     w_actions,
                   )></th>
                 </Show>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-slate-200">
+            <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
               <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
                 {
                   let ing_cal = ing.clone();
@@ -1310,8 +1315,11 @@ fn IngredientTable(
                   let on_edit = on_edit.clone();
                   // Create separate clones for each closure that needs the ingredient
                   view! {
-                    <tr class="hover:bg-slate-50">
-                      <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name.clone()}</td>
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/70">
+                      <td class=format!(
+                        "{} font-medium text-slate-900 truncate dark:text-slate-100",
+                        cell_class,
+                      )>{ing.name.clone()}</td>
                       <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
                       <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
                       <td class=cell_class>
@@ -1471,9 +1479,9 @@ pub fn Ingredients() -> impl IntoView {
 
     view! {
       <div class="mx-auto max-w-7xl py-6">
-        <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
-          <h2 class="text-3xl font-bold text-slate-900">"Ingredient List"</h2>
-          <div class="flex items-center gap-3 flex-wrap">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">"Ingredient List"</h2>
+          <div class="flex flex-wrap items-center gap-3">
             <Show when=move || auth.is_authenticated.get()>
               <button
                 class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
@@ -1485,15 +1493,18 @@ pub fn Ingredients() -> impl IntoView {
                 "New Ingredient"
               </button>
             </Show>
-            <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
-              <span class="text-sm font-medium text-slate-700">"View nutrients:"</span>
+            <div class="flex items-center gap-3 rounded-lg bg-white px-4 py-2 shadow-sm dark:border dark:border-slate-700 dark:bg-slate-900">
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-200">"View nutrients:"</span>
               <button
                 class=move || {
                   let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
                   if view_mode.get() == NutrientView::Per100g {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
-                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                    format!(
+                      "{} bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+                      base,
+                    )
                   }
                 }
                 on:click=move |_| set_view_mode.set(NutrientView::Per100g)
@@ -1506,7 +1517,10 @@ pub fn Ingredients() -> impl IntoView {
                   if view_mode.get() == NutrientView::Per100kcal {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
-                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                    format!(
+                      "{} bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+                      base,
+                    )
                   }
                 }
                 on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
@@ -1518,7 +1532,7 @@ pub fn Ingredients() -> impl IntoView {
         </div>
 
         <Suspense fallback=move || {
-          view! { <p class="text-slate-600">"Loading ingredients..."</p> }
+          view! { <p class="text-slate-600 dark:text-slate-400">"Loading ingredients..."</p> }
         }>
           {move || {
             ingredients_resource
