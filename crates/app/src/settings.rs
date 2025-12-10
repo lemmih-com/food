@@ -8,6 +8,7 @@
 //! - DailyMinimums: Fiber minimum
 
 use leptos::prelude::*;
+use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // Constants
@@ -17,6 +18,67 @@ use leptos::prelude::*;
 const CALORIES_PER_GRAM_PROTEIN: f64 = 4.0;
 const CALORIES_PER_GRAM_CARBS: f64 = 4.0;
 const CALORIES_PER_GRAM_FAT: f64 = 9.0;
+
+// Default settings
+const DEFAULT_DAILY_CALORIES: i32 = 2000;
+const DEFAULT_PROTEIN_PCT: i32 = 22;
+const DEFAULT_CARBS_PCT: i32 = 43;
+const DEFAULT_FAT_PCT: i32 = 35;
+const DEFAULT_SODIUM_MG: i32 = 2300;
+const DEFAULT_SAT_FAT_PCT: f64 = 10.0;
+const DEFAULT_FIBER_MIN: i32 = 25;
+
+#[cfg(not(feature = "ssr"))]
+const SETTINGS_STORAGE_KEY: &str = "user_settings";
+
+#[derive(Clone, Serialize, Deserialize)]
+struct SettingsData {
+    daily_calories: i32,
+    protein_pct: i32,
+    carbs_pct: i32,
+    fat_pct: i32,
+    sodium_mg: i32,
+    sat_fat_grams: i32,
+    fiber_min: i32,
+}
+
+fn sat_fat_grams_from_pct(calories: i32, pct: f64) -> i32 {
+    ((calories as f64 * pct / 100.0) / CALORIES_PER_GRAM_FAT).round() as i32
+}
+
+fn default_settings() -> SettingsData {
+    SettingsData {
+        daily_calories: DEFAULT_DAILY_CALORIES,
+        protein_pct: DEFAULT_PROTEIN_PCT,
+        carbs_pct: DEFAULT_CARBS_PCT,
+        fat_pct: DEFAULT_FAT_PCT,
+        sodium_mg: DEFAULT_SODIUM_MG,
+        sat_fat_grams: sat_fat_grams_from_pct(DEFAULT_DAILY_CALORIES, DEFAULT_SAT_FAT_PCT),
+        fiber_min: DEFAULT_FIBER_MIN,
+    }
+}
+
+#[cfg(not(feature = "ssr"))]
+fn load_settings() -> Option<SettingsData> {
+    use gloo_storage::{LocalStorage, Storage};
+
+    LocalStorage::get(SETTINGS_STORAGE_KEY).ok()
+}
+
+#[cfg(feature = "ssr")]
+fn load_settings() -> Option<SettingsData> {
+    None
+}
+
+#[cfg(not(feature = "ssr"))]
+fn save_settings(settings: &SettingsData) {
+    use gloo_storage::{LocalStorage, Storage};
+
+    let _ = LocalStorage::set(SETTINGS_STORAGE_KEY, settings);
+}
+
+#[cfg(feature = "ssr")]
+fn save_settings(_settings: &SettingsData) {}
 
 // ============================================================================
 // Types
@@ -47,6 +109,18 @@ fn PresetButtons(
 ) -> impl IntoView {
     let load_preset = move |preset: &str| {
         match preset {
+            "default" => {
+                set_daily_calories.set(DEFAULT_DAILY_CALORIES);
+                set_protein_pct.set(DEFAULT_PROTEIN_PCT);
+                set_carbs_pct.set(DEFAULT_CARBS_PCT);
+                set_fat_pct.set(DEFAULT_FAT_PCT);
+                set_sodium_mg.set(DEFAULT_SODIUM_MG);
+                set_sat_fat_grams.set(sat_fat_grams_from_pct(
+                    DEFAULT_DAILY_CALORIES,
+                    DEFAULT_SAT_FAT_PCT,
+                ));
+                set_fiber_min.set(DEFAULT_FIBER_MIN);
+            }
             "usda" => {
                 // dietaryguidelines.gov (USDA) - 2000 cal, 10-35% protein, 45-65% carbs, 20-35% fat
                 // Using middle-ground values; sodium 2300mg, sat fat <10%, fiber 28g
@@ -88,6 +162,12 @@ fn PresetButtons(
       <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
         <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
         <div class="flex flex-wrap gap-3">
+          <button
+            class="rounded bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900"
+            on:click=move |_| load_preset("default")
+          >
+            "Default (22/43/35 · 10% sat fat)"
+          </button>
           <button
             class="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
             on:click=move |_| load_preset("usda")
@@ -661,22 +741,38 @@ fn DailyMinimums(fiber_min: ReadSignal<i32>, set_fiber_min: WriteSignal<i32>) ->
 
 #[component]
 pub fn Settings() -> impl IntoView {
+    let initial_settings = load_settings().unwrap_or_else(default_settings);
+
     // Daily calorie goal
-    let (daily_calories, set_daily_calories) = signal(2000_i32);
+    let (daily_calories, set_daily_calories) = signal(initial_settings.daily_calories);
 
     // Macro distribution (must sum to 100)
-    let (protein_pct, set_protein_pct) = signal(30_i32);
-    let (carbs_pct, set_carbs_pct) = signal(40_i32);
-    let (fat_pct, set_fat_pct) = signal(30_i32);
+    let (protein_pct, set_protein_pct) = signal(initial_settings.protein_pct);
+    let (carbs_pct, set_carbs_pct) = signal(initial_settings.carbs_pct);
+    let (fat_pct, set_fat_pct) = signal(initial_settings.fat_pct);
 
     // Salt/Sodium: store internally as sodium in mg
-    let (sodium_mg, set_sodium_mg) = signal(2300_i32);
+    let (sodium_mg, set_sodium_mg) = signal(initial_settings.sodium_mg);
 
     // Saturated fat: store as grams
-    let (sat_fat_grams, set_sat_fat_grams) = signal(20_i32);
+    let (sat_fat_grams, set_sat_fat_grams) = signal(initial_settings.sat_fat_grams);
 
     // Fiber minimum
-    let (fiber_min, set_fiber_min) = signal(25_i32);
+    let (fiber_min, set_fiber_min) = signal(initial_settings.fiber_min);
+
+    create_effect(move |_| {
+        let settings = SettingsData {
+            daily_calories: daily_calories.get(),
+            protein_pct: protein_pct.get(),
+            carbs_pct: carbs_pct.get(),
+            fat_pct: fat_pct.get(),
+            sodium_mg: sodium_mg.get(),
+            sat_fat_grams: sat_fat_grams.get(),
+            fiber_min: fiber_min.get(),
+        };
+
+        save_settings(&settings);
+    });
 
     view! {
       <div class="mx-auto max-w-4xl py-6">
@@ -714,12 +810,6 @@ pub fn Settings() -> impl IntoView {
           />
 
           <DailyMinimums fiber_min=fiber_min set_fiber_min=set_fiber_min />
-
-          <div class="flex justify-end">
-            <button class="rounded bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700">
-              "Save Settings"
-            </button>
-          </div>
         </div>
       </div>
     }
