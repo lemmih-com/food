@@ -705,10 +705,7 @@ async fn test_settings_persist_after_reload(runner: &TestRunner) -> Result<()> {
             .find_element(By::Css(&selector))
             .await
             .with_context(|| format!("finding input {}", data_test))?;
-        Ok(el
-            .prop("value")
-            .await?
-            .unwrap_or_default())
+        Ok(el.prop("value").await?.unwrap_or_default())
     }
 
     // Set new values
