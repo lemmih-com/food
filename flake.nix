@@ -52,16 +52,16 @@
         CARGO_BUILD_JOBS = "2";
       };
       wranglerPkg = wrangler.packages.${system}.default;
-      wasmBindgenVersion = "0.2.105";
+      wasmBindgenVersion = "0.2.106";
       wasmBindgenCli = pkgs.rustPlatform.buildRustPackage {
         pname = "wasm-bindgen-cli";
         version = wasmBindgenVersion;
         src = pkgs.fetchCrate {
           pname = "wasm-bindgen-cli";
           version = wasmBindgenVersion;
-          sha256 = "sha256-zLPFFgnqAWq5R2KkaTGAYqVQswfBEYm9x3OPjx8DJRY=";
+          sha256 = "sha256-M6WuGl7EruNopHZbqBpucu4RWz44/MSdv6f0zkYw+44=";
         };
-        cargoHash = "sha256-a2X9bzwnMWNt0fTf30qAiJ4noal/ET1jEtf5fBFj5OU=";
+        cargoHash = "sha256-ElDatyOwdKwHg3bNH/1pcxKI7LXkhsotlDPQjiLHBwA=";
       };
       src = craneLib.cleanCargoSource (craneLib.path ./.);
       baseArgs = {
