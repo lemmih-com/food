@@ -29,7 +29,9 @@ pub fn Navigation() -> impl IntoView {
                   .map(|&(href, label, icon)| {
                     view! {
                       <A href=href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        <span aria-hidden="true" class="mr-2 text-lg leading-none">{icon}</span>
+                        <span aria-hidden="true" class="mr-2 text-lg leading-none">
+                          {icon}
+                        </span>
                         <span>{label}</span>
                       </A>
                     }
@@ -95,7 +97,9 @@ pub fn Navigation() -> impl IntoView {
                   .map(|&(href, label, icon)| {
                     view! {
                       <A href=href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        <span aria-hidden="true" class="mr-2 text-lg leading-none">{icon}</span>
+                        <span aria-hidden="true" class="mr-2 text-lg leading-none">
+                          {icon}
+                        </span>
                         <span>{label}</span>
                       </A>
                     }
