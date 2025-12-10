@@ -732,6 +732,93 @@ pub async fn delete_ingredient(id: i64) -> Result<(), ServerFnError> {
     Ok(())
 }
 
+/// Bulk upsert ingredients - inserts new ingredients or updates existing ones by name
+#[server]
+pub async fn bulk_upsert_ingredients(ingredients: Vec<Ingredient>) -> Result<usize, ServerFnError> {
+    use send_wrapper::SendWrapper;
+
+    let db = expect_context::<SendD1Database>();
+    let mut count = 0;
+
+    for ingredient in ingredients {
+        // Use INSERT OR REPLACE with a unique constraint on name
+        // Since D1 doesn't have UPSERT, we'll check if exists first
+        let existing = SendWrapper::new(async {
+            let stmt = db
+                .inner()
+                .prepare("SELECT id FROM ingredients WHERE name = ?");
+            let stmt = stmt.bind(&[ingredient.name.clone().into()])?;
+            stmt.first::<serde_json::Value>(None).await
+        })
+        .await
+        .map_err(|e| ServerFnError::new(format!("D1 query error: {:?}", e)))?;
+
+        if let Some(row) = existing {
+            // Update existing
+            let id = row
+                .get("id")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| ServerFnError::new("Failed to get ID"))?;
+
+            SendWrapper::new(async {
+                let stmt = db.inner().prepare(
+                    "UPDATE ingredients SET category = ?, calories = ?, protein = ?, fat = ?, saturated_fat = ?, carbs = ?, sugar = ?, fiber = ?, salt = ?, package_size_g = ?, package_price = ?, store = ?, updated_at = datetime('now') WHERE id = ?"
+                );
+                let stmt = stmt.bind(&[
+                    ingredient.category.as_str().into(),
+                    ingredient.calories.into(),
+                    ingredient.protein.into(),
+                    ingredient.fat.into(),
+                    ingredient.saturated_fat.into(),
+                    ingredient.carbs.into(),
+                    ingredient.sugar.into(),
+                    ingredient.fiber.into(),
+                    ingredient.salt.into(),
+                    ingredient.package_size_g.into(),
+                    ingredient.package_price.into(),
+                    ingredient.store.clone().into(),
+                    (id as f64).into(),
+                ])?;
+                stmt.run().await
+            })
+            .await
+            .map_err(|e| ServerFnError::new(format!("D1 update error: {:?}", e)))?;
+
+            log::info!("Updated ingredient: {} (id: {})", ingredient.name, id);
+        } else {
+            // Insert new
+            SendWrapper::new(async {
+                let stmt = db.inner().prepare(
+                    "INSERT INTO ingredients (name, category, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price, store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                );
+                let stmt = stmt.bind(&[
+                    ingredient.name.clone().into(),
+                    ingredient.category.as_str().into(),
+                    ingredient.calories.into(),
+                    ingredient.protein.into(),
+                    ingredient.fat.into(),
+                    ingredient.saturated_fat.into(),
+                    ingredient.carbs.into(),
+                    ingredient.sugar.into(),
+                    ingredient.fiber.into(),
+                    ingredient.salt.into(),
+                    ingredient.package_size_g.into(),
+                    ingredient.package_price.into(),
+                    ingredient.store.clone().into(),
+                ])?;
+                stmt.run().await
+            })
+            .await
+            .map_err(|e| ServerFnError::new(format!("D1 insert error: {:?}", e)))?;
+
+            log::info!("Inserted ingredient: {}", ingredient.name);
+        }
+        count += 1;
+    }
+
+    Ok(count)
+}
+
 // ============================================================================
 // Components
 // ============================================================================
@@ -1430,6 +1517,351 @@ fn IngredientTable(
     }
 }
 
+/// Result of parsing a single line of TSV input
+#[derive(Clone, Debug)]
+pub enum ParsedLine {
+    /// A category header line (e.g., "Protein")
+    Category(IngredientCategory),
+    /// A valid ingredient
+    Ingredient(Ingredient),
+    /// A line that couldn't be parsed (with error message)
+    Error(String, String),
+    /// Empty or header line to skip
+    Skip,
+}
+
+/// Parse TSV input into ingredients
+/// Format: Name\tPrice\tUnit size\tCalories\tTotal Fat\tSaturated Fat\tCarbs\tSugar\tFiber\tProtein\tSalt
+fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
+    let mut results = Vec::new();
+    let mut current_category = IngredientCategory::Other;
+
+    for line in input.lines() {
+        let line = line.trim();
+
+        // Skip empty lines
+        if line.is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split('\t').collect();
+
+        // Check if this is a header line
+        if parts.len() == 1 || (parts.len() > 1 && parts[1..].iter().all(|p| p.trim().is_empty())) {
+            let name = parts[0].trim();
+            // Check for category headers
+            if let Some(cat) = IngredientCategory::parse_str(&name.to_lowercase()) {
+                current_category = cat;
+                results.push(ParsedLine::Category(cat));
+                continue;
+            }
+            // Check for the header row
+            if name == "Name" || name.contains("Calories") {
+                results.push(ParsedLine::Skip);
+                continue;
+            }
+        }
+
+        // Try to parse as ingredient
+        // Expected columns: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt
+        if parts.len() < 11 {
+            results.push(ParsedLine::Error(
+                line.to_string(),
+                format!("Expected 11 columns, got {}", parts.len()),
+            ));
+            continue;
+        }
+
+        let name = parts[0].trim();
+        if name.is_empty() {
+            results.push(ParsedLine::Skip);
+            continue;
+        }
+
+        let parse_f32 = |s: &str| -> f32 { s.trim().parse().unwrap_or(0.0) };
+
+        let ingredient = Ingredient {
+            id: None,
+            name: name.to_string(),
+            category: current_category,
+            package_price: parse_f32(parts[1]),
+            package_size_g: parse_f32(parts[2]),
+            calories: parse_f32(parts[3]),
+            fat: parse_f32(parts[4]),
+            saturated_fat: parse_f32(parts[5]),
+            carbs: parse_f32(parts[6]),
+            sugar: parse_f32(parts[7]),
+            fiber: parse_f32(parts[8]),
+            protein: parse_f32(parts[9]),
+            salt: parse_f32(parts[10]),
+            store: String::new(),
+        };
+
+        results.push(ParsedLine::Ingredient(ingredient));
+    }
+
+    results
+}
+
+/// Modal for bulk importing ingredients from TSV
+#[component]
+fn BulkImportModal(
+    show: RwSignal<bool>,
+    on_save: impl Fn() + Clone + Send + Sync + 'static,
+) -> impl IntoView {
+    let tsv_input = RwSignal::new(String::new());
+    let parsed_results = RwSignal::new(Vec::<ParsedLine>::new());
+    let error = RwSignal::new(Option::<String>::None);
+    let importing = RwSignal::new(false);
+
+    // Parse input whenever it changes
+    Effect::new(move || {
+        let input = tsv_input.get();
+        let results = parse_tsv_ingredients(&input);
+        parsed_results.set(results);
+    });
+
+    let close = move || {
+        show.set(false);
+        tsv_input.set(String::new());
+        parsed_results.set(Vec::new());
+        error.set(None);
+    };
+
+    let get_ingredients_to_import = move || -> Vec<Ingredient> {
+        parsed_results
+            .get()
+            .into_iter()
+            .filter_map(|p| match p {
+                ParsedLine::Ingredient(ing) => Some(ing),
+                _ => None,
+            })
+            .collect()
+    };
+
+    let handle_import = {
+        let on_save = on_save.clone();
+        move || {
+            let ingredients = get_ingredients_to_import();
+            if ingredients.is_empty() {
+                error.set(Some("No valid ingredients to import".to_string()));
+                return;
+            }
+
+            importing.set(true);
+            let on_save = on_save.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let result = bulk_upsert_ingredients(ingredients).await;
+
+                importing.set(false);
+                match result {
+                    Ok(count) => {
+                        log::info!("Imported {} ingredients", count);
+                        show.set(false);
+                        tsv_input.set(String::new());
+                        parsed_results.set(Vec::new());
+                        on_save();
+                    }
+                    Err(e) => {
+                        error.set(Some(format!("Failed to import: {}", e)));
+                    }
+                }
+            });
+        }
+    };
+
+    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono";
+    let cell_class = "px-2 py-1 text-xs border-b border-slate-200";
+
+    view! {
+      <Show when=move || show.get()>
+        <div
+          id="bulk-import-modal-backdrop"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-4"
+          on:click=move |ev: web_sys::MouseEvent| {
+            if let Some(target) = ev.target() {
+              if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                if element.id() == "bulk-import-modal-backdrop" {
+                  close();
+                }
+              }
+            }
+          }
+        >
+          <div class="w-full max-w-6xl rounded-lg bg-white p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl font-bold text-slate-900">"Bulk Import Ingredients"</h2>
+              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <Show when=move || error.get().is_some()>
+              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+                {move || error.get().unwrap_or_default()}
+              </div>
+            </Show>
+
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                "Paste TSV data (tab-separated values from spreadsheet)"
+              </label>
+              <p class="text-xs text-slate-500 mb-2">
+                "Format: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt"
+              </p>
+              <p class="text-xs text-slate-500 mb-2">
+                "Category headers (Protein, Carbs, Veggies, Other) on their own line will set the category for following ingredients."
+              </p>
+              <textarea
+                class=input_class
+                rows=8
+                prop:value=move || tsv_input.get()
+                on:input=move |ev| tsv_input.set(event_target_value(&ev))
+                placeholder="Paste your ingredient data here..."
+              />
+            </div>
+
+            // Preview section
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold text-slate-700 mb-2">"Preview"</h3>
+              {move || {
+                let results = parsed_results.get();
+                let ingredient_count = results.iter().filter(|p| matches!(p, ParsedLine::Ingredient(_))).count();
+                let error_count = results.iter().filter(|p| matches!(p, ParsedLine::Error(_, _))).count();
+
+                view! {
+                  <div class="text-sm text-slate-600 mb-2">
+                    <span class="font-medium">{ingredient_count}</span>
+                    " ingredients to import"
+                    {if error_count > 0 {
+                      view! { <span class="text-red-600 ml-2">"("{error_count}" errors)"</span> }.into_any()
+                    } else {
+                      view! { <span></span> }.into_any()
+                    }}
+                  </div>
+
+                  <Show when=move || !results.is_empty()>
+                    <div class="rounded border border-slate-200 overflow-x-auto max-h-64 overflow-y-auto">
+                      <table class="w-full text-xs">
+                        <thead class="bg-slate-50 sticky top-0">
+                          <tr>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Status"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Category"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Name"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Price"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Size (g)"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Cal"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Fat"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Sat. Fat"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Carbs"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Sugar"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Fiber"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Protein"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Salt"</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <For each=move || parsed_results.get().into_iter().enumerate() key=|(i, _)| *i let:item>
+                            {
+                              let (_, parsed) = item;
+                              match parsed {
+                                ParsedLine::Category(cat) => {
+                                  view! {
+                                    <tr class="bg-blue-50">
+                                      <td class=cell_class colspan="13">
+                                        <span class="font-semibold text-blue-700">"Category: "{cat.title()}</span>
+                                      </td>
+                                    </tr>
+                                  }
+                                    .into_any()
+                                }
+                                ParsedLine::Ingredient(ing) => {
+                                  view! {
+                                    <tr class="hover:bg-slate-50">
+                                      <td class=cell_class>
+                                        <span class="text-green-600 font-medium">"OK"</span>
+                                      </td>
+                                      <td class=cell_class>{ing.category.title()}</td>
+                                      <td class=format!("{} font-medium", cell_class)>{ing.name.clone()}</td>
+                                      <td class=cell_class>
+                                        {if ing.package_price > 0.0 {
+                                          format!("${:.2}", ing.package_price)
+                                        } else {
+                                          "-".to_string()
+                                        }}
+                                      </td>
+                                      <td class=cell_class>{format!("{:.0}", ing.package_size_g)}</td>
+                                      <td class=cell_class>{format!("{:.0}", ing.calories)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.fat)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.saturated_fat)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.carbs)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.sugar)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.fiber)}</td>
+                                      <td class=cell_class>{format!("{:.1}", ing.protein)}</td>
+                                      <td class=cell_class>{format!("{:.2}", ing.salt)}</td>
+                                    </tr>
+                                  }
+                                    .into_any()
+                                }
+                                ParsedLine::Error(line, err) => {
+                                  view! {
+                                    <tr class="bg-red-50">
+                                      <td class=cell_class>
+                                        <span class="text-red-600 font-medium">"Error"</span>
+                                      </td>
+                                      <td class=cell_class colspan="12">
+                                        <span class="text-red-600">{err}</span>
+                                        <span class="text-slate-500 ml-2 truncate block max-w-md">{line}</span>
+                                      </td>
+                                    </tr>
+                                  }
+                                    .into_any()
+                                }
+                                ParsedLine::Skip => view! { <tr></tr> }.into_any(),
+                              }
+                            }
+                          </For>
+                        </tbody>
+                      </table>
+                    </div>
+                  </Show>
+                }
+              }}
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+              <button
+                class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                on:click=move |_| close()
+              >
+                "Cancel"
+              </button>
+              <button
+                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                disabled=move || importing.get() || get_ingredients_to_import().is_empty()
+                on:click={
+                  let handle_import = handle_import.clone();
+                  move |_| handle_import()
+                }
+              >
+                {move || {
+                  if importing.get() {
+                    "Importing...".to_string()
+                  } else {
+                    let count = get_ingredients_to_import().len();
+                    format!("Import {} ingredient{}", count, if count == 1 { "" } else { "s" })
+                  }
+                }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+    }
+}
+
 #[component]
 pub fn Ingredients() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
@@ -1441,6 +1873,7 @@ pub fn Ingredients() -> impl IntoView {
     // Modal state
     let show_modal = RwSignal::new(false);
     let editing_ingredient = RwSignal::new(Option::<Ingredient>::None);
+    let show_bulk_import = RwSignal::new(false);
 
     // Fetch ingredients from server
     let ingredients_resource = Resource::new(|| (), |_| get_ingredients());
@@ -1483,6 +1916,20 @@ pub fn Ingredients() -> impl IntoView {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 "New Ingredient"
+              </button>
+              <button
+                class="flex items-center gap-2 rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                on:click=move |_| show_bulk_import.set(true)
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                "Bulk Import"
               </button>
             </Show>
             <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
@@ -1589,6 +2036,7 @@ pub fn Ingredients() -> impl IntoView {
         </Suspense>
 
         <IngredientModal show=show_modal editing=editing_ingredient on_save=refetch />
+        <BulkImportModal show=show_bulk_import on_save=refetch />
       </div>
     }
 }
