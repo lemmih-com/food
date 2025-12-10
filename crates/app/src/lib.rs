@@ -6,6 +6,8 @@ pub mod pages;
 pub mod recipes;
 pub mod settings;
 
+#[cfg(not(feature = "ssr"))]
+use gloo_storage::{LocalStorage, Storage};
 use leptos::{
     hydration::{AutoReload, HydrationScripts},
     prelude::*,
@@ -16,6 +18,7 @@ use leptos_router::{
     components::{Route, Router, Routes},
     path,
 };
+use serde::{Deserialize, Serialize};
 
 // Re-export public types from modules
 pub use auth::{AdminAuth, AuthState, LoginResult, ValidateResult};
@@ -38,6 +41,81 @@ use pages::{Home, Navigation};
 use recipes::Recipes;
 use settings::Settings;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Theme {
+    Light,
+    Dark,
+}
+
+impl Theme {
+    fn toggle(self) -> Self {
+        match self {
+            Theme::Light => Theme::Dark,
+            Theme::Dark => Theme::Light,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct ThemeState {
+    pub theme: ReadSignal<Theme>,
+    pub set_theme: WriteSignal<Theme>,
+}
+
+const THEME_STORAGE_KEY: &str = "food_theme";
+
+fn load_theme() -> Theme {
+    #[cfg(feature = "ssr")]
+    {
+        let _ = THEME_STORAGE_KEY;
+        Theme::Light
+    }
+
+    #[cfg(not(feature = "ssr"))]
+    {
+        LocalStorage::get(THEME_STORAGE_KEY).unwrap_or(Theme::Light)
+    }
+}
+
+fn persist_theme(theme: Theme) {
+    #[cfg(feature = "ssr")]
+    {
+        let _ = theme;
+        let _ = THEME_STORAGE_KEY;
+    }
+
+    #[cfg(not(feature = "ssr"))]
+    let _ = LocalStorage::set(THEME_STORAGE_KEY, theme);
+}
+
+fn sync_dom_theme(theme: Theme) {
+    #[cfg(feature = "ssr")]
+    let _ = theme;
+
+    #[cfg(not(feature = "ssr"))]
+    {
+        use web_sys::window;
+
+        if let Some(document) = window().and_then(|win| win.document()) {
+            if let Some(el) = document.document_element() {
+                let classes = el.class_list();
+                let _ = classes.remove_1("dark");
+                if theme == Theme::Dark {
+                    let _ = classes.add_1("dark");
+                }
+            }
+
+            if let Some(body) = document.body() {
+                let (bg, text) = match theme {
+                    Theme::Light => ("bg-slate-100", "text-slate-900"),
+                    Theme::Dark => ("bg-slate-950", "text-slate-100"),
+                };
+                body.set_class_name(&format!("{bg} {text} antialiased"));
+            }
+        }
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
@@ -47,11 +125,24 @@ pub fn App() -> impl IntoView {
     auth.init();
     provide_context(auth);
 
+    let initial_theme = load_theme();
+    let (theme, set_theme) = signal(initial_theme);
+    provide_context(ThemeState { theme, set_theme });
+
+    Effect::new(move |_| {
+        let current = theme.get();
+        persist_theme(current);
+        sync_dom_theme(current);
+    });
+
     view! {
       <Router>
         <Navigation />
         <PinModal />
-        <main class="min-h-screen bg-slate-100 px-4">
+        <main class=move || match theme.get() {
+          Theme::Light => "min-h-screen bg-slate-100 px-4 text-slate-900",
+          Theme::Dark => "min-h-screen bg-slate-950 px-4 text-slate-100",
+        }>
           <Routes fallback=|| "Not found">
             <Route path=path!("/") view=Home />
             <Route path=path!("/ingredients") view=Ingredients />

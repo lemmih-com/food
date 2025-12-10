@@ -5,10 +5,11 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
-use crate::auth::AdminAuthButton;
+use crate::{auth::AdminAuthButton, Theme, ThemeState};
 
 #[component]
 pub fn Navigation() -> impl IntoView {
+    let theme_state = expect_context::<ThemeState>();
     let (menu_open, set_menu_open) = signal(false);
     let links: [(&str, &str); 4] = [
         ("/", "Food Log"),
@@ -16,19 +17,26 @@ pub fn Navigation() -> impl IntoView {
         ("/recipes", "Recipes"),
         ("/settings", "Settings"),
     ];
+    let is_dark = move || theme_state.theme.get() == Theme::Dark;
 
     view! {
-      <nav class="bg-slate-800 text-white shadow-md">
+      <nav class=move || match theme_state.theme.get() {
+        Theme::Light => "border-b border-slate-200 bg-white text-slate-900 shadow-md",
+        Theme::Dark => "border-b border-slate-800 bg-slate-900 text-slate-100 shadow-lg",
+      }>
         <div class="mx-auto max-w-7xl px-4">
           <div class="flex h-16 items-center justify-between">
             <div class="flex items-center gap-8">
-              <h1 class="text-xl font-bold">"food.lemmih.com"</h1>
+              <h1 class="text-xl font-bold tracking-tight">"food.lemmih.com"</h1>
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
                   .map(|&(href, label)| {
                     view! {
-                      <A href=href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
+                      <A
+                        href=href
+                        attr:class="rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
+                      >
                         {label}
                       </A>
                     }
@@ -38,6 +46,8 @@ pub fn Navigation() -> impl IntoView {
             </div>
 
             <div class="flex items-center gap-3">
+              <ThemeToggle />
+
               <div class="hidden sm:flex">
                 <AdminAuthButton />
               </div>
@@ -87,18 +97,33 @@ pub fn Navigation() -> impl IntoView {
           </div>
 
           <Show when=move || menu_open.get()>
-            <div id="primary-navigation" class="space-y-2 border-t border-slate-700 pb-4 pt-4 sm:hidden">
+            <div
+              id="primary-navigation"
+              class=move || {
+                format!(
+                  "space-y-2 pb-4 pt-4 sm:hidden {} {}",
+                  if is_dark() { "border-t border-slate-800" } else { "border-t border-slate-200" },
+                  if is_dark() { "bg-slate-900/80" } else { "bg-white/90" },
+                )
+              }
+            >
               <div class="space-y-1">
                 {links
                   .iter()
                   .map(|&(href, label)| {
                     view! {
-                      <A href=href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
+                      <A
+                        href=href
+                        attr:class="block rounded px-3 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50"
+                      >
                         {label}
                       </A>
                     }
                   })
                   .collect_view()}
+              </div>
+              <div class="border-t border-slate-700 pt-3">
+                <ThemeToggle />
               </div>
               <div class="border-t border-slate-700 pt-3">
                 <AdminAuthButton />
@@ -107,6 +132,120 @@ pub fn Navigation() -> impl IntoView {
           </Show>
         </div>
       </nav>
+    }
+}
+
+#[component]
+fn ThemeToggle() -> impl IntoView {
+    let theme_state = expect_context::<ThemeState>();
+    let is_dark = move || theme_state.theme.get() == Theme::Dark;
+
+    let pill_classes = move || {
+        if is_dark() {
+            "bg-gradient-to-r from-slate-600 via-slate-700 to-slate-900"
+        } else {
+            "bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500"
+        }
+    };
+
+    let toggle_label = move || match theme_state.theme.get() {
+        Theme::Light => "Light mode",
+        Theme::Dark => "Dark mode",
+    };
+
+    view! {
+      <button
+        type="button"
+        class=move || {
+          format!(
+            "group relative inline-flex items-center gap-3 rounded-full border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-400/70 {}",
+            if is_dark() {
+              "border-slate-700/80 bg-slate-900/90 text-slate-100 shadow-lg shadow-emerald-500/10 hover:-translate-y-0.5 hover:bg-slate-800"
+            } else {
+              "border-amber-200/80 bg-white/90 text-slate-900 shadow-md shadow-amber-400/20 hover:-translate-y-0.5 hover:bg-amber-50"
+            },
+          )
+        }
+        on:click=move |_| theme_state.set_theme.update(|theme| *theme = theme.toggle())
+        title="Toggle light and dark mode"
+      >
+        <div class=move || {
+          format!(
+            "relative flex h-9 w-16 items-center overflow-hidden rounded-full transition-colors {}",
+            pill_classes(),
+          )
+        }>
+          <span
+            class=move || {
+              format!(
+                "absolute left-2 flex h-5 w-5 items-center justify-center transition-opacity {}",
+                if is_dark() { "opacity-0" } else { "opacity-100" },
+              )
+            }
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="h-5 w-5 text-amber-700 drop-shadow"
+            >
+              <path d="M12 4.5a1 1 0 0 1 1 1V7a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1Z" />
+              <path d="M6.136 6.136a1 1 0 0 1 1.414 0l1.06 1.06a1 1 0 1 1-1.414 1.415l-1.06-1.06a1 1 0 0 1 0-1.415Z" />
+              <path d="M4.5 12a1 1 0 0 1 1-1H7a1 1 0 1 1 0 2H5.5a1 1 0 0 1-1-1Z" />
+              <path d="M6.136 17.864a1 1 0 0 1 0-1.414l1.06-1.06a1 1 0 1 1 1.414 1.414l-1.06 1.06a1 1 0 0 1-1.414 0Z" />
+              <path d="M12 17a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V18a1 1 0 0 1 1-1Z" />
+              <path d="M17.864 17.864a1 1 0 0 1-1.414 0l-1.06-1.06a1 1 0 1 1 1.414-1.415l1.06 1.06a1 1 0 0 1 0 1.415Z" />
+              <path d="M17 12a1 1 0 0 1 1-1h1.5a1 1 0 1 1 0 2H18a1 1 0 0 1-1-1Z" />
+              <path d="M16.45 6.95a1 1 0 0 1 0-1.414l1.062-1.063a1 1 0 1 1 1.414 1.414L17.864 6.95a1 1 0 0 1-1.415 0Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </span>
+          <span
+            class=move || {
+              format!(
+                "absolute right-2 flex h-5 w-5 items-center justify-center transition-opacity {}",
+                if is_dark() { "opacity-100" } else { "opacity-0" },
+              )
+            }
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="h-5 w-5 text-amber-100 drop-shadow"
+            >
+              <path d="M20.354 15.354a8.5 8.5 0 1 1-11.707-11.707 8.5 8.5 0 0 0 11.707 11.707Z" />
+            </svg>
+          </span>
+          <div
+            class=move || {
+              format!(
+                "absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-full shadow-md ring-1 transition-transform duration-200 {}",
+                if is_dark() {
+                  "translate-x-7 bg-slate-950 text-amber-200 ring-slate-700/70"
+                } else {
+                  "translate-x-0 bg-white text-amber-500 ring-white/40"
+                },
+              )
+            }
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class=move || {
+                format!("h-4 w-4 transition-opacity {}", if is_dark() { "opacity-100" } else { "opacity-80" })
+              }
+            >
+              <path d="M12 2a1 1 0 0 1 .894.553l.021.047A10 10 0 1 1 3.4 16.32a.75.75 0 0 1 .986-1.094 8.5 8.5 0 1 0 9.3-13.009A1 1 0 0 1 12 2Z" />
+            </svg>
+          </div>
+        </div>
+        <span class="hidden pr-1 text-sm font-semibold sm:inline">{toggle_label}</span>
+      </button>
     }
 }
 
