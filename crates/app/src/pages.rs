@@ -10,11 +10,11 @@ use crate::auth::AdminAuthButton;
 #[component]
 pub fn Navigation() -> impl IntoView {
     let (menu_open, set_menu_open) = signal(false);
-    let links: [(&str, &str); 4] = [
-        ("/", "Food Log"),
-        ("/ingredients", "Ingredients"),
-        ("/recipes", "Recipes"),
-        ("/settings", "Settings"),
+    let links: [(&str, &str, &str); 4] = [
+        ("/", "Food Log", "🍽️"),
+        ("/ingredients", "Ingredients", "🥕"),
+        ("/recipes", "Recipes", "📖"),
+        ("/settings", "Settings", "⚙️"),
     ];
 
     view! {
@@ -26,10 +26,11 @@ pub fn Navigation() -> impl IntoView {
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
-                  .map(|&(href, label)| {
+                  .map(|&(href, label, icon)| {
                     view! {
                       <A href=href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        {label}
+                        <span aria-hidden="true" class="mr-2 text-lg leading-none">{icon}</span>
+                        <span>{label}</span>
                       </A>
                     }
                   })
@@ -91,10 +92,11 @@ pub fn Navigation() -> impl IntoView {
               <div class="space-y-1">
                 {links
                   .iter()
-                  .map(|&(href, label)| {
+                  .map(|&(href, label, icon)| {
                     view! {
                       <A href=href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
-                        {label}
+                        <span aria-hidden="true" class="mr-2 text-lg leading-none">{icon}</span>
+                        <span>{label}</span>
                       </A>
                     }
                   })
