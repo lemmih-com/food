@@ -28,8 +28,8 @@ pub use auth::{AdminLogin, AdminLogout, AdminValidate};
 #[cfg(feature = "ssr")]
 pub use ingredients::SendD1Database;
 pub use ingredients::{
-    CreateIngredient, DeleteIngredient, GetIngredients, Ingredient, IngredientCategory,
-    UpdateIngredient,
+    BulkUpsertIngredients, CreateIngredient, DeleteIngredient, GetIngredients, Ingredient,
+    IngredientCategory, UpdateIngredient,
 };
 
 // Re-export recipe types for worker registration
