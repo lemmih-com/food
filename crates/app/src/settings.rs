@@ -760,7 +760,7 @@ pub fn Settings() -> impl IntoView {
     // Fiber minimum
     let (fiber_min, set_fiber_min) = signal(initial_settings.fiber_min);
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         let settings = SettingsData {
             daily_calories: daily_calories.get(),
             protein_pct: protein_pct.get(),
