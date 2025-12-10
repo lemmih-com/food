@@ -9,7 +9,7 @@ use crate::auth::AdminAuthButton;
 
 #[component]
 pub fn Navigation() -> impl IntoView {
-    let (menu_open, set_menu_open) = create_signal(false);
+    let (menu_open, set_menu_open) = signal(false);
     let links: [(&str, &str); 4] = [
         ("/", "Food Log"),
         ("/ingredients", "Ingredients"),
@@ -26,9 +26,9 @@ pub fn Navigation() -> impl IntoView {
               <div class="hidden space-x-4 sm:flex">
                 {links
                   .iter()
-                  .map(|(href, label)| {
+                  .map(|&(href, label)| {
                     view! {
-                      <A href=*href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
+                      <A href=href attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
                         {label}
                       </A>
                     }
@@ -91,9 +91,9 @@ pub fn Navigation() -> impl IntoView {
               <div class="space-y-1">
                 {links
                   .iter()
-                  .map(|(href, label)| {
+                  .map(|&(href, label)| {
                     view! {
-                      <A href=*href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
+                      <A href=href attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700">
                         {label}
                       </A>
                     }
