@@ -895,7 +895,7 @@ fn RecipeModalContent(
 
                             <div class="mt-6 flex items-center justify-between">
                                 <h3 class="text-lg font-semibold text-slate-900">"Ingredients"</h3>
-                        <button
+          <button
                             class="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
                             on:click=move |_| add_row(())
                             data-test="recipe-add-ingredient"
@@ -981,8 +981,8 @@ fn RecipeCard(
           <div>
             <h3 class="text-2xl font-bold text-slate-900">{recipe.name.clone()}</h3>
             <p class="text-sm text-slate-600">
-              {format!("Prep: {} | Cook: {} | Servings: {}", recipe.prep_time, recipe.cook_time, recipe.servings)}
-            </p>
+            {format!("Prep: {} | Cook: {} | Servings: {}", recipe.prep_time, recipe.cook_time, recipe.servings)}
+          </p>
           </div>
           <span class=format!(
             "rounded px-3 py-1 text-sm font-medium {} {}",
@@ -992,15 +992,15 @@ fn RecipeCard(
         </div>
 
         <div class="mb-3 flex flex-wrap gap-2">
-          {recipe
-            .tags
-            .iter()
-            .map(|tag| {
-              let (bg, text) = get_tag_color(tag);
+            {recipe
+              .tags
+              .iter()
+              .map(|tag| {
+                let (bg, text) = get_tag_color(tag);
               view! { <span class=format!("rounded px-2 py-1 text-xs {} {}", bg, text)>{tag.clone()}</span> }
-            })
-            .collect_view()}
-        </div>
+              })
+              .collect_view()}
+          </div>
 
         <h4 class="mb-2 font-semibold text-slate-900">"Ingredients"</h4>
         <ul class="mb-4 list-inside list-disc space-y-1 text-slate-700">
@@ -1221,7 +1221,7 @@ fn RecipeModal(
         });
     });
 
-                view! {
+    view! {
         <Show when=move || show.get() fallback=|| ()>
             <div
                 id="recipe-modal-backdrop"
@@ -1490,11 +1490,11 @@ pub fn Recipes() -> impl IntoView {
                     .into_any()
                 } else {
                   view! {
-                    <div class="grid gap-6 lg:grid-cols-2">
-                      <For
+        <div class="grid gap-6 lg:grid-cols-2">
+          <For
                         each=move || recipes.clone()
                         key=|recipe| recipe.id
-                        children=move |recipe: Recipe| {
+            children=move |recipe: Recipe| {
                           view! {
                             <RecipeCard
                               recipe=recipe
@@ -1503,9 +1503,9 @@ pub fn Recipes() -> impl IntoView {
                               is_admin=auth.is_authenticated.read_only()
                             />
                           }
-                        }
-                      />
-                    </div>
+            }
+          />
+        </div>
                   }
                     .into_any()
                 }
