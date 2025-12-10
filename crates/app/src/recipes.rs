@@ -912,20 +912,24 @@ fn RecipeModal(
     };
 
     view! {
-      <Show when=move || show.get() fallback=move || view! {} >
-        <div
-          id="recipe-modal-backdrop"
-          class="fixed inset-0 z-50 bg-black/50 overflow-y-auto py-6"
-          on:click=move |ev: web_sys::MouseEvent| {
-            if let Some(target) = ev.target() {
-              if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
-                if element.id() == "recipe-modal-backdrop" {
-                  show.set(false);
+      <Show
+        when=move || show.get()
+        fallback=move || view! {}
+        children=move || {
+          view! {
+            <div
+            id="recipe-modal-backdrop"
+            class="fixed inset-0 z-50 bg-black/50 overflow-y-auto py-6"
+            on:click=move |ev: web_sys::MouseEvent| {
+              if let Some(target) = ev.target() {
+                if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                  if element.id() == "recipe-modal-backdrop" {
+                    show.set(false);
+                  }
                 }
               }
             }
-          }
-        >
+          >
             <div class="relative mx-auto max-w-5xl rounded-lg bg-white p-6 shadow-xl w-[95%]" data-test="recipe-modal">
               <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-xl font-bold text-slate-900">
@@ -1099,7 +1103,9 @@ fn RecipeModal(
             </div>
           </div>
         </div>
-      </Show>
+          }
+        }
+      />
     }
 }
 
