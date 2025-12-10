@@ -791,7 +791,7 @@ fn RecipeModalContent(
             }
         >
             <div class="relative mx-auto max-w-5xl rounded-lg bg-white p-6 shadow-xl w-[95%]" data-test="recipe-modal">
-                <div class="mb-4 flex items-center justify-between">
+        <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-xl font-bold text-slate-900">
                         {move || if editing_id.get().is_some() { "Edit recipe" } else { "New recipe" }}
                     </h2>
@@ -895,7 +895,7 @@ fn RecipeModalContent(
 
                             <div class="mt-6 flex items-center justify-between">
                                 <h3 class="text-lg font-semibold text-slate-900">"Ingredients"</h3>
-                                <button
+          <button
                                     class="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
                                     on:click=add_row
                                     data-test="recipe-add-ingredient"
@@ -958,8 +958,8 @@ fn RecipeModalContent(
                                     data-test="recipe-save"
                                 >
                                     {move || if saving.get() { "Saving..." } else { "Save recipe" }}
-                                </button>
-                            </div>
+          </button>
+        </div>
                         </div>
                     </div>
         </Show>
@@ -981,8 +981,8 @@ fn RecipeCard(
           <div>
             <h3 class="text-2xl font-bold text-slate-900">{recipe.name.clone()}</h3>
             <p class="text-sm text-slate-600">
-              {format!("Prep: {} | Cook: {} | Servings: {}", recipe.prep_time, recipe.cook_time, recipe.servings)}
-            </p>
+            {format!("Prep: {} | Cook: {} | Servings: {}", recipe.prep_time, recipe.cook_time, recipe.servings)}
+          </p>
           </div>
           <span class=format!(
             "rounded px-3 py-1 text-sm font-medium {} {}",
@@ -992,15 +992,15 @@ fn RecipeCard(
         </div>
 
         <div class="mb-3 flex flex-wrap gap-2">
-          {recipe
-            .tags
-            .iter()
-            .map(|tag| {
-              let (bg, text) = get_tag_color(tag);
+            {recipe
+              .tags
+              .iter()
+              .map(|tag| {
+                let (bg, text) = get_tag_color(tag);
               view! { <span class=format!("rounded px-2 py-1 text-xs {} {}", bg, text)>{tag.clone()}</span> }
-            })
-            .collect_view()}
-        </div>
+              })
+              .collect_view()}
+          </div>
 
         <h4 class="mb-2 font-semibold text-slate-900">"Ingredients"</h4>
         <ul class="mb-4 list-inside list-disc space-y-1 text-slate-700">
@@ -1123,7 +1123,7 @@ fn RecipeModal(
                     .map(IngredientRow::from_recipe)
                     .collect(),
             );
-        } else {
+            } else {
             editing_id.set(None);
             name.set(String::new());
             meal_type.set(String::from("Dinner"));
@@ -1160,115 +1160,255 @@ fn RecipeModal(
         }
     });
 
-    let save_recipe = {
-        let rows = rows.clone();
-        let name = name.clone();
-        let meal_type = meal_type.clone();
-        let prep_time = prep_time.clone();
-        let cook_time = cook_time.clone();
-        let servings = servings.clone();
-        let tags = tags.clone();
-        let instructions = instructions.clone();
-        let editing_id = editing_id.clone();
-        let saving = saving.clone();
-        let show = show.clone();
-        let on_saved = on_saved.clone();
-        let error = error.clone();
-        Callback::new(move |_| {
-            error.set(None);
+    let save_recipe = move |_| {
+        error.set(None);
 
-            let mut input = build_input_from_form(
-                name.get(),
-                meal_type.get(),
-                prep_time.get(),
-                cook_time.get(),
-                servings.get(),
-                tags.get(),
-                instructions.get(),
-                &rows.get(),
-            )
-            .map_err(|e| error.set(Some(e)))
-            .ok();
+        let mut input = build_input_from_form(
+            name.get(),
+            meal_type.get(),
+            prep_time.get(),
+            cook_time.get(),
+            servings.get(),
+            tags.get(),
+            instructions.get(),
+            &rows.get(),
+        )
+        .map_err(|e| error.set(Some(e)))
+        .ok();
 
-            if let Some(id) = editing_id.get() {
-                if let Some(ref mut inp) = input {
-                    inp.id = Some(id);
-                }
+        if let Some(id) = editing_id.get() {
+            if let Some(ref mut inp) = input {
+                inp.id = Some(id);
             }
+        }
 
-            if let Some(input) = input {
-                saving.set(true);
-                let on_saved = on_saved.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    match upsert_recipe(input).await {
-                        Ok(_) => {
-                            saving.set(false);
-                            show.set(false);
-                            on_saved.run(());
-                        }
-                        Err(e) => {
-                            saving.set(false);
-                            error.set(Some(format!("Failed to save: {}", e)));
-                        }
+        if let Some(input) = input {
+            saving.set(true);
+            let on_saved = on_saved.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                match upsert_recipe(input).await {
+                    Ok(_) => {
+                        saving.set(false);
+                        show.set(false);
+                        on_saved.run(());
+                    }
+                    Err(e) => {
+                        saving.set(false);
+                        error.set(Some(format!("Failed to save: {}", e)));
                     }
                 });
+            });
+        }
+    };
+
+    let add_row = move |_| {
+        rows.update(|list| list.push(IngredientRow::new()));
+    };
+
+    let handle_row_change = Callback::new(move |(idx, updated): (usize, IngredientRow)| {
+        rows.update(|list| {
+            if let Some(row) = list.get_mut(idx) {
+                *row = updated;
             }
-        })
-    };
+        });
+    });
 
-    let add_row = {
-        let rows = rows.clone();
-        Callback::new(move |_| {
-            rows.update(|list| list.push(IngredientRow::new()));
-        })
-    };
+    let handle_row_remove = Callback::new(move |idx: usize| {
+        rows.update(|list| {
+            if list.len() > 1 && idx < list.len() {
+                list.remove(idx);
+            }
+        });
+    });
 
-    let handle_row_change = {
-        let rows = rows.clone();
-        Callback::new(move |(idx, updated): (usize, IngredientRow)| {
-            rows.update(|list| {
-                if let Some(row) = list.get_mut(idx) {
-                    *row = updated;
+                view! {
+        <Show when=move || show.get() fallback=|| ()>
+            <div
+                id="recipe-modal-backdrop"
+                class="fixed inset-0 z-50 bg-black/50 overflow-y-auto py-6"
+                on:click=move |ev: web_sys::MouseEvent| {
+                    if let Some(target) = ev.target() {
+                        if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                            if element.id() == "recipe-modal-backdrop" {
+                                show.set(false);
+                            }
+                        }
+                    }
                 }
-            });
-        })
-    };
+            >
+                <div class="relative mx-auto max-w-5xl rounded-lg bg-white p-6 shadow-xl w-[95%]" data-test="recipe-modal">
+                    <div class="mb-4 flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-slate-900">
+                            {move || if editing_id.get().is_some() { "Edit recipe" } else { "New recipe" }}
+                        </h2>
+                        <button class="text-slate-500 hover:text-slate-700" on:click=move |_| show.set(false) aria-label="Close recipe modal">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-    let handle_row_remove = {
-        let rows = rows.clone();
-        Callback::new(move |idx: usize| {
-            rows.update(|list| {
-                if list.len() > 1 && idx < list.len() {
-                    list.remove(idx);
-                }
-            });
-        })
-    };
+                    <Show when=move || error.get().is_some()>
+                        <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+                            {move || error.get().unwrap_or_default()}
+                        </div>
+                    </Show>
 
-    let ingredients_clone = ingredients.clone();
-    view! {
-      <Show when=move || show.get() fallback=|| ()>
-        <RecipeModalContent
-          show=show
-          editing_id=editing_id
-          name=name
-          meal_type=meal_type
-          prep_time=prep_time
-          cook_time=cook_time
-          servings=servings
-          tags=tags
-          instructions=instructions
-          error=error
-          rows=rows
-          ingredients=ingredients_clone
-          nutrition_preview=nutrition_preview
-          saving=saving
-          add_row=add_row
-          handle_row_change=handle_row_change
-          handle_row_remove=handle_row_remove
-          save_recipe=save_recipe
-        />
-      </Show>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">"Name"</label>
+                            <input
+                                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                type="text"
+                                prop:value=name
+                                on:input=move |ev| name.set(event_target_value(&ev))
+                                placeholder="e.g. Chicken bowl"
+                                data-test="recipe-name"
+                            />
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">"Meal type"</label>
+                                <select
+                                    class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    prop:value=meal_type
+                                    on:change=move |ev| meal_type.set(event_target_value(&ev))
+                                    data-test="recipe-meal-type"
+                                >
+                                    <option value="Breakfast">"Breakfast"</option>
+                                    <option value="Lunch">"Lunch"</option>
+                                    <option value="Dinner" selected>"Dinner"</option>
+                                    <option value="Snack">"Snack"</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">"Servings"</label>
+                                <input
+                                    class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    type="number"
+                                    min="1"
+                                    prop:value=servings
+                                    on:input=move |ev| servings.set(event_target_value(&ev))
+                                    data-test="recipe-servings"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">"Prep time"</label>
+                            <input
+                                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                type="text"
+                                prop:value=prep_time
+                                on:input=move |ev| prep_time.set(event_target_value(&ev))
+                                placeholder="e.g. 10 min"
+                                data-test="recipe-prep-time"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">"Cook time"</label>
+                            <input
+                                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                type="text"
+                                prop:value=cook_time
+                                on:input=move |ev| cook_time.set(event_target_value(&ev))
+                                placeholder="e.g. 20 min"
+                                data-test="recipe-cook-time"
+                            />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">"Tags (comma separated)"</label>
+                            <input
+                                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                type="text"
+                                prop:value=tags
+                                on:input=move |ev| tags.set(event_target_value(&ev))
+                                placeholder="e.g. High Protein, Quick"
+                                data-test="recipe-tags"
+                            />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">"Instructions (one per line)"</label>
+                            <textarea
+                                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                rows=4
+                                prop:value=instructions
+                                on:input=move |ev| instructions.set(event_target_value(&ev))
+                                placeholder="Line by line instructions"
+                                data-test="recipe-instructions"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-900">"Ingredients"</h3>
+                  <button
+                            class="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
+                            on:click=move |_| add_row(())
+                            data-test="recipe-add-ingredient"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            "Add ingredient"
+                  </button>
+                    </div>
+
+                    <div class="mt-4 space-y-4">
+                        <For
+                            each=move || rows.get().into_iter().enumerate().collect::<Vec<_>>()
+                            key=|(idx, _)| *idx
+                            children=move |(idx, row): (usize, IngredientRow)| {
+                                view! {
+                                    <RecipeIngredientFormRow
+                                        idx=idx
+                                        row=row
+                                        ingredients=ingredients.clone()
+                                        on_change=handle_row_change
+                                        on_remove=handle_row_remove
+                                    />
+                                }
+                            }
+                        />
+                    </div>
+
+                    <div class="mt-6 rounded bg-slate-50 p-4">
+                        <h4 class="font-semibold text-slate-900 mb-2">"Nutrition preview (per serving)"</h4>
+                        <p class="text-sm text-slate-700">
+                            {move || {
+                                let n = nutrition_preview.get();
+                                format!(
+                                    "{} kcal • {}g protein • {}g carbs • {}g fat • {}g sat fat • {}g fiber • {}g salt",
+                                    display_float(n.calories),
+                                    display_float(n.protein),
+                                    display_float(n.carbs),
+                                    display_float(n.fat),
+                                    display_float(n.sat_fat),
+                                    display_float(n.fiber),
+                                    display_float(n.salt),
+                                )
+                            }}
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+            <button
+                            class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                            on:click=move |_| show.set(false)
+                        >
+                            "Cancel"
+                        </button>
+                        <button
+                            class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                            disabled=move || saving.get()
+                            on:click=move |_| save_recipe(())
+                            data-test="recipe-save"
+                        >
+                            {move || if saving.get() { "Saving..." } else { "Save recipe" }}
+            </button>
+                    </div>
+                </div>
+          </div>
+        </Show>
     }
 }
 
@@ -1350,11 +1490,11 @@ pub fn Recipes() -> impl IntoView {
                     .into_any()
                 } else {
                   view! {
-                    <div class="grid gap-6 lg:grid-cols-2">
-                      <For
+        <div class="grid gap-6 lg:grid-cols-2">
+          <For
                         each=move || recipes.clone()
                         key=|recipe| recipe.id
-                        children=move |recipe: Recipe| {
+            children=move |recipe: Recipe| {
                           view! {
                             <RecipeCard
                               recipe=recipe
@@ -1363,9 +1503,9 @@ pub fn Recipes() -> impl IntoView {
                               is_admin=auth.is_authenticated.read_only()
                             />
                           }
-                        }
-                      />
-                    </div>
+            }
+          />
+        </div>
                   }
                     .into_any()
                 }
