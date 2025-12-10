@@ -24,7 +24,7 @@ gloo-storage = { workspace = true }
 log = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
-web-sys = { workspace = true, features = ["HtmlElement", "KeyboardEvent", "MouseEvent", "EventTarget"] }
+web-sys = { workspace = true, features = ["HtmlElement", "KeyboardEvent", "MouseEvent", "EventTarget", "Storage", "Window"] }
 getrandom = { workspace = true }
 hex = { workspace = true }
 js-sys = { workspace = true }
