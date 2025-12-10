@@ -1,7 +1,6 @@
 #![recursion_limit = "512"]
 
 pub mod auth;
-pub mod icons;
 pub mod ingredients;
 pub mod pages;
 pub mod recipes;
