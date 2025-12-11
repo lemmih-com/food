@@ -144,46 +144,13 @@ async fn test_ingredients_page_accessible(runner: &TestRunner) -> Result<()> {
         );
     }
 
-    // Check for table headers which should be present even without data
-    let has_table_headers = body.contains("Proteins")
-        || body.contains("Carbs")
-        || body.contains("Vegetables")
-        || body.contains("Other");
+    // Accept either empty state or ingredient content
+    let has_empty_state = body.contains("No ingredients yet");
+    let has_view_mode = body.contains("per 100g") || body.contains("per 100kcal");
 
-    if !has_table_headers {
-        // Print a snippet of the body for debugging
-        let snippet = if body.len() > 500 {
-            &body[..500]
-        } else {
-            &body
-        };
+    if !has_empty_state && !has_view_mode {
         anyhow::bail!(
-            "Ingredients page should contain category tables (Proteins, Carbs, Vegetables, Other). Page length: {} bytes. Snippet: {}...",
-            body.len(),
-            snippet
-        );
-    }
-
-    // More lenient check - just verify some ingredient-related content exists
-    let has_ingredient = body.contains("Chicken Breast")
-        || body.contains("chicken breast")
-        || body.contains("Broccoli")
-        || body.contains("broccoli");
-
-    if !has_ingredient {
-        anyhow::bail!(
-            "Ingredients page should contain sample ingredient data. Page length: {} bytes",
-            body.len()
-        );
-    }
-
-    // Check for nutritional columns
-    let has_nutrition = (body.contains("Protein") || body.contains("protein"))
-        && (body.contains("Carbs") || body.contains("carbs") || body.contains("Carbohydrates"));
-
-    if !has_nutrition {
-        anyhow::bail!(
-            "Ingredients page should contain nutritional columns. Page length: {} bytes",
+            "Ingredients page should show either empty state or view mode toggle. Page length: {} bytes",
             body.len()
         );
     }

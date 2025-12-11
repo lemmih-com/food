@@ -13,61 +13,12 @@ use crate::auth::AdminAuth;
 // Data Types
 // ============================================================================
 
-/// Ingredient category for organizing into separate tables
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum IngredientCategory {
-    Protein,
-    Carbs,
-    Veggies,
-    Other,
-}
-
-impl IngredientCategory {
-    pub fn title(&self) -> &'static str {
-        match self {
-            IngredientCategory::Protein => "Proteins",
-            IngredientCategory::Carbs => "Carbs",
-            IngredientCategory::Veggies => "Vegetables",
-            IngredientCategory::Other => "Other",
-        }
-    }
-
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            IngredientCategory::Protein => "protein",
-            IngredientCategory::Carbs => "carbs",
-            IngredientCategory::Veggies => "veggies",
-            IngredientCategory::Other => "other",
-        }
-    }
-
-    pub fn parse_str(s: &str) -> Option<Self> {
-        match s {
-            "protein" => Some(IngredientCategory::Protein),
-            "carbs" => Some(IngredientCategory::Carbs),
-            "veggies" => Some(IngredientCategory::Veggies),
-            "other" => Some(IngredientCategory::Other),
-            _ => None,
-        }
-    }
-
-    pub fn all() -> [IngredientCategory; 4] {
-        [
-            IngredientCategory::Protein,
-            IngredientCategory::Carbs,
-            IngredientCategory::Veggies,
-            IngredientCategory::Other,
-        ]
-    }
-}
-
 /// All nutrient values are per 100g
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Ingredient {
     pub id: Option<i64>,
     pub name: String,
-    pub category: IngredientCategory,
+    pub labels: Vec<String>,
     // Nutrients per 100g
     pub calories: f32,      // kcal
     pub protein: f32,       // g
@@ -80,7 +31,6 @@ pub struct Ingredient {
     // Package info
     pub package_size_g: f32, // grams
     pub package_price: f32,  // price in local currency
-    pub store: String,
 }
 
 impl Ingredient {
@@ -93,12 +43,12 @@ impl Ingredient {
         }
     }
 
-    /// Create a new empty ingredient with a given category
-    pub fn new_empty(category: IngredientCategory) -> Self {
+    /// Create a new empty ingredient
+    pub fn new_empty() -> Self {
         Self {
             id: None,
             name: String::new(),
-            category,
+            labels: Vec::new(),
             calories: 0.0,
             protein: 0.0,
             fat: 0.0,
@@ -109,14 +59,13 @@ impl Ingredient {
             salt: 0.0,
             package_size_g: 0.0,
             package_price: 0.0,
-            store: String::new(),
         }
     }
 }
 
 impl Default for Ingredient {
     fn default() -> Self {
-        Self::new_empty(IngredientCategory::Other)
+        Self::new_empty()
     }
 }
 
@@ -194,432 +143,76 @@ impl SendD1Database {
 }
 
 // ============================================================================
-// Default Data (for seeding empty database)
-// ============================================================================
-
-fn get_default_ingredients() -> Vec<Ingredient> {
-    vec![
-        // Proteins
-        Ingredient {
-            id: None,
-            name: "Chicken Breast".to_string(),
-            category: IngredientCategory::Protein,
-            calories: 165.0,
-            protein: 31.0,
-            fat: 3.6,
-            saturated_fat: 1.0,
-            carbs: 0.0,
-            sugar: 0.0,
-            fiber: 0.0,
-            salt: 74.0,
-            package_size_g: 500.0,
-            package_price: 8.99,
-            store: "Whole Foods".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Salmon".to_string(),
-            category: IngredientCategory::Protein,
-            calories: 208.0,
-            protein: 20.0,
-            fat: 13.0,
-            saturated_fat: 3.0,
-            carbs: 0.0,
-            sugar: 0.0,
-            fiber: 0.0,
-            salt: 59.0,
-            package_size_g: 400.0,
-            package_price: 12.99,
-            store: "Costco".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Eggs (dozen)".to_string(),
-            category: IngredientCategory::Protein,
-            calories: 155.0,
-            protein: 13.0,
-            fat: 11.0,
-            saturated_fat: 3.3,
-            carbs: 1.1,
-            sugar: 1.1,
-            fiber: 0.0,
-            salt: 124.0,
-            package_size_g: 720.0,
-            package_price: 4.99,
-            store: "All stores".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Ground Beef (lean)".to_string(),
-            category: IngredientCategory::Protein,
-            calories: 250.0,
-            protein: 26.0,
-            fat: 15.0,
-            saturated_fat: 6.0,
-            carbs: 0.0,
-            sugar: 0.0,
-            fiber: 0.0,
-            salt: 75.0,
-            package_size_g: 500.0,
-            package_price: 7.99,
-            store: "Safeway".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Tofu (firm)".to_string(),
-            category: IngredientCategory::Protein,
-            calories: 144.0,
-            protein: 17.0,
-            fat: 9.0,
-            saturated_fat: 1.3,
-            carbs: 3.0,
-            sugar: 1.0,
-            fiber: 2.0,
-            salt: 14.0,
-            package_size_g: 400.0,
-            package_price: 2.99,
-            store: "Trader Joe's".to_string(),
-        },
-        // Carbs
-        Ingredient {
-            id: None,
-            name: "Brown Rice".to_string(),
-            category: IngredientCategory::Carbs,
-            calories: 112.0,
-            protein: 2.6,
-            fat: 0.9,
-            saturated_fat: 0.2,
-            carbs: 24.0,
-            sugar: 0.4,
-            fiber: 1.8,
-            salt: 1.0,
-            package_size_g: 907.0,
-            package_price: 3.99,
-            store: "Trader Joe's".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Pasta (whole wheat)".to_string(),
-            category: IngredientCategory::Carbs,
-            calories: 124.0,
-            protein: 5.3,
-            fat: 0.5,
-            saturated_fat: 0.1,
-            carbs: 25.0,
-            sugar: 0.6,
-            fiber: 4.5,
-            salt: 4.0,
-            package_size_g: 454.0,
-            package_price: 2.49,
-            store: "Safeway".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Oats (rolled)".to_string(),
-            category: IngredientCategory::Carbs,
-            calories: 389.0,
-            protein: 16.9,
-            fat: 6.9,
-            saturated_fat: 1.2,
-            carbs: 66.0,
-            sugar: 0.0,
-            fiber: 10.6,
-            salt: 2.0,
-            package_size_g: 510.0,
-            package_price: 4.49,
-            store: "Trader Joe's".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Quinoa".to_string(),
-            category: IngredientCategory::Carbs,
-            calories: 120.0,
-            protein: 4.4,
-            fat: 1.9,
-            saturated_fat: 0.2,
-            carbs: 21.0,
-            sugar: 0.9,
-            fiber: 2.8,
-            salt: 7.0,
-            package_size_g: 340.0,
-            package_price: 5.99,
-            store: "Whole Foods".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Bread (whole grain)".to_string(),
-            category: IngredientCategory::Carbs,
-            calories: 247.0,
-            protein: 13.0,
-            fat: 4.2,
-            saturated_fat: 0.8,
-            carbs: 41.0,
-            sugar: 6.0,
-            fiber: 7.0,
-            salt: 450.0,
-            package_size_g: 680.0,
-            package_price: 4.99,
-            store: "Safeway".to_string(),
-        },
-        // Vegetables
-        Ingredient {
-            id: None,
-            name: "Broccoli".to_string(),
-            category: IngredientCategory::Veggies,
-            calories: 34.0,
-            protein: 2.8,
-            fat: 0.4,
-            saturated_fat: 0.0,
-            carbs: 7.0,
-            sugar: 1.7,
-            fiber: 2.6,
-            salt: 33.0,
-            package_size_g: 350.0,
-            package_price: 2.49,
-            store: "Safeway".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Spinach (fresh)".to_string(),
-            category: IngredientCategory::Veggies,
-            calories: 23.0,
-            protein: 2.9,
-            fat: 0.4,
-            saturated_fat: 0.0,
-            carbs: 3.6,
-            sugar: 0.4,
-            fiber: 2.2,
-            salt: 79.0,
-            package_size_g: 142.0,
-            package_price: 3.99,
-            store: "Trader Joe's".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Bell Peppers".to_string(),
-            category: IngredientCategory::Veggies,
-            calories: 31.0,
-            protein: 1.0,
-            fat: 0.3,
-            saturated_fat: 0.0,
-            carbs: 6.0,
-            sugar: 4.2,
-            fiber: 2.1,
-            salt: 4.0,
-            package_size_g: 300.0,
-            package_price: 3.99,
-            store: "Whole Foods".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Carrots".to_string(),
-            category: IngredientCategory::Veggies,
-            calories: 41.0,
-            protein: 0.9,
-            fat: 0.2,
-            saturated_fat: 0.0,
-            carbs: 10.0,
-            sugar: 4.7,
-            fiber: 2.8,
-            salt: 69.0,
-            package_size_g: 454.0,
-            package_price: 1.99,
-            store: "All stores".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Tomatoes (canned)".to_string(),
-            category: IngredientCategory::Veggies,
-            calories: 18.0,
-            protein: 0.9,
-            fat: 0.1,
-            saturated_fat: 0.0,
-            carbs: 4.0,
-            sugar: 2.6,
-            fiber: 1.0,
-            salt: 9.0,
-            package_size_g: 400.0,
-            package_price: 1.49,
-            store: "All stores".to_string(),
-        },
-        // Other
-        Ingredient {
-            id: None,
-            name: "Olive Oil".to_string(),
-            category: IngredientCategory::Other,
-            calories: 884.0,
-            protein: 0.0,
-            fat: 100.0,
-            saturated_fat: 14.0,
-            carbs: 0.0,
-            sugar: 0.0,
-            fiber: 0.0,
-            salt: 2.0,
-            package_size_g: 500.0,
-            package_price: 9.99,
-            store: "Trader Joe's".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Butter".to_string(),
-            category: IngredientCategory::Other,
-            calories: 717.0,
-            protein: 0.9,
-            fat: 81.0,
-            saturated_fat: 51.0,
-            carbs: 0.1,
-            sugar: 0.1,
-            fiber: 0.0,
-            salt: 714.0,
-            package_size_g: 227.0,
-            package_price: 4.99,
-            store: "All stores".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Greek Yogurt".to_string(),
-            category: IngredientCategory::Other,
-            calories: 59.0,
-            protein: 10.0,
-            fat: 0.7,
-            saturated_fat: 0.1,
-            carbs: 3.6,
-            sugar: 3.2,
-            fiber: 0.0,
-            salt: 36.0,
-            package_size_g: 450.0,
-            package_price: 5.49,
-            store: "Trader Joe's".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Cheese (cheddar)".to_string(),
-            category: IngredientCategory::Other,
-            calories: 403.0,
-            protein: 25.0,
-            fat: 33.0,
-            saturated_fat: 21.0,
-            carbs: 1.3,
-            sugar: 0.5,
-            fiber: 0.0,
-            salt: 621.0,
-            package_size_g: 227.0,
-            package_price: 5.99,
-            store: "Costco".to_string(),
-        },
-        Ingredient {
-            id: None,
-            name: "Honey".to_string(),
-            category: IngredientCategory::Other,
-            calories: 304.0,
-            protein: 0.3,
-            fat: 0.0,
-            saturated_fat: 0.0,
-            carbs: 82.0,
-            sugar: 82.0,
-            fiber: 0.0,
-            salt: 4.0,
-            package_size_g: 340.0,
-            package_price: 7.99,
-            store: "Whole Foods".to_string(),
-        },
-    ]
-}
-
-// ============================================================================
 // Server Functions
 // ============================================================================
 
 /// Fetch all ingredients from D1 database
-/// If database is empty, populates with default data
 #[server]
 pub async fn get_ingredients() -> Result<Vec<Ingredient>, ServerFnError> {
     use send_wrapper::SendWrapper;
 
     let db = expect_context::<SendD1Database>();
 
-    // Check if table is empty
-    let count_result = SendWrapper::new(async {
-        let count_stmt = db
-            .inner()
-            .prepare("SELECT COUNT(*) as count FROM ingredients");
-        count_stmt.first::<serde_json::Value>(None).await
-    })
-    .await
-    .map_err(|e| ServerFnError::new(format!("D1 count error: {:?}", e)))?;
-
-    let is_empty = count_result
-        .and_then(|v| v.get("count").and_then(|c| c.as_i64()))
-        .map(|c| c == 0)
-        .unwrap_or(true);
-
-    // If empty, seed with default data
-    if is_empty {
-        log::info!("Ingredients table is empty, seeding with default data");
-        let defaults = get_default_ingredients();
-        for ing in defaults {
-            SendWrapper::new(async {
-                let stmt = db.inner().prepare(
-                    "INSERT INTO ingredients (name, category, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price, store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                );
-                let stmt = stmt
-                    .bind(&[
-                        ing.name.into(),
-                        ing.category.as_str().into(),
-                        ing.calories.into(),
-                        ing.protein.into(),
-                        ing.fat.into(),
-                        ing.saturated_fat.into(),
-                        ing.carbs.into(),
-                        ing.sugar.into(),
-                        ing.fiber.into(),
-                        ing.salt.into(),
-                        ing.package_size_g.into(),
-                        ing.package_price.into(),
-                        ing.store.into(),
-                    ])?;
-                stmt.run().await
-            })
-            .await
-            .map_err(|e| ServerFnError::new(format!("D1 insert error: {:?}", e)))?;
-        }
-    }
-
-    // Fetch all ingredients
-    let results = SendWrapper::new(async {
+    // Fetch all ingredients and their labels
+    let ingredients = SendWrapper::new(async {
         let stmt = db.inner().prepare(
-            "SELECT id, name, category, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price, store FROM ingredients ORDER BY name"
+            "SELECT id, name, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price FROM ingredients ORDER BY name"
         );
-        stmt.all().await
+        let results = stmt.all().await?;
+        let rows: Vec<serde_json::Value> = results.results::<serde_json::Value>()?;
+
+        let mut ingredients = Vec::new();
+
+        for row in rows {
+            let ingredient_id = row.get("id").and_then(|v| v.as_i64()).unwrap_or(0);
+
+            // Fetch labels for this ingredient
+            let label_stmt = db
+                .inner()
+                .prepare("SELECT label FROM ingredient_labels WHERE ingredient_id = ? ORDER BY label");
+            let label_stmt = label_stmt.bind(&[(ingredient_id as f64).into()])?;
+            let label_results = label_stmt.all().await?;
+            let label_rows: Vec<serde_json::Value> = label_results.results::<serde_json::Value>()?;
+
+            let labels: Vec<String> = label_rows
+                .into_iter()
+                .filter_map(|r| r.get("label")?.as_str().map(|s| s.to_string()))
+                .collect();
+
+            ingredients.push(Ingredient {
+                id: Some(ingredient_id),
+                name: row
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                labels,
+                calories: row.get("calories").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                protein: row.get("protein").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                fat: row.get("fat").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                saturated_fat: row
+                    .get("saturated_fat")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0) as f32,
+                carbs: row.get("carbs").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                sugar: row.get("sugar").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                fiber: row.get("fiber").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                salt: row.get("salt").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                package_size_g: row
+                    .get("package_size_g")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0) as f32,
+                package_price: row
+                    .get("package_price")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0) as f32,
+            });
+        }
+
+        Ok::<_, worker::Error>(ingredients)
     })
     .await
     .map_err(|e| ServerFnError::new(format!("D1 query error: {:?}", e)))?;
-
-    let ingredients: Vec<Ingredient> = results
-        .results::<serde_json::Value>()
-        .map_err(|e| ServerFnError::new(format!("D1 results error: {:?}", e)))?
-        .into_iter()
-        .filter_map(|row| {
-            let category_str = row.get("category")?.as_str()?;
-            let category = IngredientCategory::parse_str(category_str)?;
-            Some(Ingredient {
-                id: row.get("id")?.as_i64(),
-                name: row.get("name")?.as_str()?.to_string(),
-                category,
-                calories: row.get("calories")?.as_f64()? as f32,
-                protein: row.get("protein")?.as_f64()? as f32,
-                fat: row.get("fat")?.as_f64()? as f32,
-                saturated_fat: row.get("saturated_fat")?.as_f64()? as f32,
-                carbs: row.get("carbs")?.as_f64()? as f32,
-                sugar: row.get("sugar")?.as_f64()? as f32,
-                fiber: row.get("fiber")?.as_f64()? as f32,
-                salt: row.get("salt")?.as_f64()? as f32,
-                package_size_g: row.get("package_size_g")?.as_f64()? as f32,
-                package_price: row.get("package_price")?.as_f64()? as f32,
-                store: row.get("store")?.as_str()?.to_string(),
-            })
-        })
-        .collect();
 
     Ok(ingredients)
 }
@@ -633,25 +226,22 @@ pub async fn create_ingredient(ingredient: Ingredient) -> Result<Ingredient, Ser
 
     let result = SendWrapper::new(async {
         let stmt = db.inner().prepare(
-            "INSERT INTO ingredients (name, category, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price, store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
+            "INSERT INTO ingredients (name, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
         );
 
-        let stmt = stmt
-            .bind(&[
-                ingredient.name.clone().into(),
-                ingredient.category.as_str().into(),
-                ingredient.calories.into(),
-                ingredient.protein.into(),
-                ingredient.fat.into(),
-                ingredient.saturated_fat.into(),
-                ingredient.carbs.into(),
-                ingredient.sugar.into(),
-                ingredient.fiber.into(),
-                ingredient.salt.into(),
-                ingredient.package_size_g.into(),
-                ingredient.package_price.into(),
-                ingredient.store.clone().into(),
-            ])?;
+        let stmt = stmt.bind(&[
+            ingredient.name.clone().into(),
+            ingredient.calories.into(),
+            ingredient.protein.into(),
+            ingredient.fat.into(),
+            ingredient.saturated_fat.into(),
+            ingredient.carbs.into(),
+            ingredient.sugar.into(),
+            ingredient.fiber.into(),
+            ingredient.salt.into(),
+            ingredient.package_size_g.into(),
+            ingredient.package_price.into(),
+        ])?;
 
         stmt.first::<serde_json::Value>(None).await
     })
@@ -661,6 +251,19 @@ pub async fn create_ingredient(ingredient: Ingredient) -> Result<Ingredient, Ser
     let id = result
         .and_then(|v| v.get("id").and_then(|id| id.as_i64()))
         .ok_or_else(|| ServerFnError::new("Failed to get inserted ID"))?;
+
+    // Insert labels
+    for label in &ingredient.labels {
+        SendWrapper::new(async {
+            let stmt = db
+                .inner()
+                .prepare("INSERT INTO ingredient_labels (ingredient_id, label) VALUES (?, ?)");
+            let stmt = stmt.bind(&[(id as f64).into(), label.clone().into()])?;
+            stmt.run().await
+        })
+        .await
+        .map_err(|e| ServerFnError::new(format!("D1 insert label error: {:?}", e)))?;
+    }
 
     log::info!("Created ingredient: {} (id: {})", ingredient.name, id);
 
@@ -683,31 +286,52 @@ pub async fn update_ingredient(ingredient: Ingredient) -> Result<(), ServerFnErr
 
     SendWrapper::new(async {
         let stmt = db.inner().prepare(
-            "UPDATE ingredients SET name = ?, category = ?, calories = ?, protein = ?, fat = ?, saturated_fat = ?, carbs = ?, sugar = ?, fiber = ?, salt = ?, package_size_g = ?, package_price = ?, store = ?, updated_at = datetime('now') WHERE id = ?"
+            "UPDATE ingredients SET name = ?, calories = ?, protein = ?, fat = ?, saturated_fat = ?, carbs = ?, sugar = ?, fiber = ?, salt = ?, package_size_g = ?, package_price = ?, updated_at = datetime('now') WHERE id = ?"
         );
 
-        let stmt = stmt
-            .bind(&[
-                ingredient.name.into(),
-                ingredient.category.as_str().into(),
-                ingredient.calories.into(),
-                ingredient.protein.into(),
-                ingredient.fat.into(),
-                ingredient.saturated_fat.into(),
-                ingredient.carbs.into(),
-                ingredient.sugar.into(),
-                ingredient.fiber.into(),
-                ingredient.salt.into(),
-                ingredient.package_size_g.into(),
-                ingredient.package_price.into(),
-                ingredient.store.into(),
-                (id as f64).into(), // D1 doesn't support bigint, use f64
-            ])?;
+        let stmt = stmt.bind(&[
+            ingredient.name.into(),
+            ingredient.calories.into(),
+            ingredient.protein.into(),
+            ingredient.fat.into(),
+            ingredient.saturated_fat.into(),
+            ingredient.carbs.into(),
+            ingredient.sugar.into(),
+            ingredient.fiber.into(),
+            ingredient.salt.into(),
+            ingredient.package_size_g.into(),
+            ingredient.package_price.into(),
+            (id as f64).into(),
+        ])?;
 
         stmt.run().await
     })
     .await
     .map_err(|e| ServerFnError::new(format!("D1 update error: {:?}", e)))?;
+
+    // Delete existing labels and re-insert
+    SendWrapper::new(async {
+        let stmt = db
+            .inner()
+            .prepare("DELETE FROM ingredient_labels WHERE ingredient_id = ?");
+        let stmt = stmt.bind(&[(id as f64).into()])?;
+        stmt.run().await
+    })
+    .await
+    .map_err(|e| ServerFnError::new(format!("D1 delete labels error: {:?}", e)))?;
+
+    // Insert updated labels
+    for label in &ingredient.labels {
+        SendWrapper::new(async {
+            let stmt = db
+                .inner()
+                .prepare("INSERT INTO ingredient_labels (ingredient_id, label) VALUES (?, ?)");
+            let stmt = stmt.bind(&[(id as f64).into(), label.clone().into()])?;
+            stmt.run().await
+        })
+        .await
+        .map_err(|e| ServerFnError::new(format!("D1 insert label error: {:?}", e)))?;
+    }
 
     log::info!("Updated ingredient id: {}", id);
     Ok(())
@@ -720,9 +344,10 @@ pub async fn delete_ingredient(id: i64) -> Result<(), ServerFnError> {
 
     let db = expect_context::<SendD1Database>();
 
+    // Labels will be deleted by CASCADE
     SendWrapper::new(async {
         let stmt = db.inner().prepare("DELETE FROM ingredients WHERE id = ?");
-        let stmt = stmt.bind(&[(id as f64).into()])?; // D1 doesn't support bigint, use f64
+        let stmt = stmt.bind(&[(id as f64).into()])?;
         stmt.run().await
     })
     .await
@@ -741,8 +366,7 @@ pub async fn bulk_upsert_ingredients(ingredients: Vec<Ingredient>) -> Result<usi
     let mut count = 0;
 
     for ingredient in ingredients {
-        // Use INSERT OR REPLACE with a unique constraint on name
-        // Since D1 doesn't have UPSERT, we'll check if exists first
+        // Check if exists by name
         let existing = SendWrapper::new(async {
             let stmt = db
                 .inner()
@@ -753,19 +377,20 @@ pub async fn bulk_upsert_ingredients(ingredients: Vec<Ingredient>) -> Result<usi
         .await
         .map_err(|e| ServerFnError::new(format!("D1 query error: {:?}", e)))?;
 
+        let ingredient_id: i64;
+
         if let Some(row) = existing {
             // Update existing
-            let id = row
+            ingredient_id = row
                 .get("id")
                 .and_then(|v| v.as_i64())
                 .ok_or_else(|| ServerFnError::new("Failed to get ID"))?;
 
             SendWrapper::new(async {
                 let stmt = db.inner().prepare(
-                    "UPDATE ingredients SET category = ?, calories = ?, protein = ?, fat = ?, saturated_fat = ?, carbs = ?, sugar = ?, fiber = ?, salt = ?, package_size_g = ?, package_price = ?, store = ?, updated_at = datetime('now') WHERE id = ?"
+                    "UPDATE ingredients SET calories = ?, protein = ?, fat = ?, saturated_fat = ?, carbs = ?, sugar = ?, fiber = ?, salt = ?, package_size_g = ?, package_price = ?, updated_at = datetime('now') WHERE id = ?"
                 );
                 let stmt = stmt.bind(&[
-                    ingredient.category.as_str().into(),
                     ingredient.calories.into(),
                     ingredient.protein.into(),
                     ingredient.fat.into(),
@@ -776,24 +401,26 @@ pub async fn bulk_upsert_ingredients(ingredients: Vec<Ingredient>) -> Result<usi
                     ingredient.salt.into(),
                     ingredient.package_size_g.into(),
                     ingredient.package_price.into(),
-                    ingredient.store.clone().into(),
-                    (id as f64).into(),
+                    (ingredient_id as f64).into(),
                 ])?;
                 stmt.run().await
             })
             .await
             .map_err(|e| ServerFnError::new(format!("D1 update error: {:?}", e)))?;
 
-            log::info!("Updated ingredient: {} (id: {})", ingredient.name, id);
+            log::info!(
+                "Updated ingredient: {} (id: {})",
+                ingredient.name,
+                ingredient_id
+            );
         } else {
             // Insert new
-            SendWrapper::new(async {
+            let result = SendWrapper::new(async {
                 let stmt = db.inner().prepare(
-                    "INSERT INTO ingredients (name, category, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price, store) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO ingredients (name, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"
                 );
                 let stmt = stmt.bind(&[
                     ingredient.name.clone().into(),
-                    ingredient.category.as_str().into(),
                     ingredient.calories.into(),
                     ingredient.protein.into(),
                     ingredient.fat.into(),
@@ -804,15 +431,43 @@ pub async fn bulk_upsert_ingredients(ingredients: Vec<Ingredient>) -> Result<usi
                     ingredient.salt.into(),
                     ingredient.package_size_g.into(),
                     ingredient.package_price.into(),
-                    ingredient.store.clone().into(),
                 ])?;
-                stmt.run().await
+                stmt.first::<serde_json::Value>(None).await
             })
             .await
             .map_err(|e| ServerFnError::new(format!("D1 insert error: {:?}", e)))?;
 
+            ingredient_id = result
+                .and_then(|v| v.get("id").and_then(|id| id.as_i64()))
+                .ok_or_else(|| ServerFnError::new("Failed to get inserted ID"))?;
+
             log::info!("Inserted ingredient: {}", ingredient.name);
         }
+
+        // Delete existing labels and re-insert
+        SendWrapper::new(async {
+            let stmt = db
+                .inner()
+                .prepare("DELETE FROM ingredient_labels WHERE ingredient_id = ?");
+            let stmt = stmt.bind(&[(ingredient_id as f64).into()])?;
+            stmt.run().await
+        })
+        .await
+        .map_err(|e| ServerFnError::new(format!("D1 delete labels error: {:?}", e)))?;
+
+        // Insert labels
+        for label in &ingredient.labels {
+            SendWrapper::new(async {
+                let stmt = db
+                    .inner()
+                    .prepare("INSERT INTO ingredient_labels (ingredient_id, label) VALUES (?, ?)");
+                let stmt = stmt.bind(&[(ingredient_id as f64).into(), label.clone().into()])?;
+                stmt.run().await
+            })
+            .await
+            .map_err(|e| ServerFnError::new(format!("D1 insert label error: {:?}", e)))?;
+        }
+
         count += 1;
     }
 
@@ -850,6 +505,93 @@ fn SortableHeader(
     }
 }
 
+/// Label badge component
+#[component]
+fn LabelBadge(label: String, on_remove: Option<Box<dyn Fn() + Send + Sync>>) -> impl IntoView {
+    view! {
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        {label}
+        {on_remove
+          .map(|remove| {
+            view! {
+              <button
+                type="button"
+                class="ml-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                on:click=move |_| remove()
+              >
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            }
+          })}
+      </span>
+    }
+}
+
+/// Label filter component (similar to recipe filtering)
+#[component]
+fn LabelFilter(
+    all_labels: ReadSignal<Vec<String>>,
+    selected_labels: RwSignal<Vec<String>>,
+) -> impl IntoView {
+    let toggle_label = move |label: String| {
+        selected_labels.update(|labels| {
+            if let Some(pos) = labels.iter().position(|l| l == &label) {
+                labels.remove(pos);
+            } else {
+                labels.push(label);
+            }
+        });
+    };
+
+    view! {
+      <div class="flex flex-wrap gap-2 items-center">
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">"Filter by label:"</span>
+        <For
+          each=move || all_labels.get()
+          key=|label| label.clone()
+          children=move |label: String| {
+            let label_clone = label.clone();
+            let label_for_check = label.clone();
+            let is_selected = move || selected_labels.get().contains(&label_for_check);
+            view! {
+              <button
+                type="button"
+                class=move || {
+                  let base = "px-2 py-1 text-xs font-medium rounded-full transition-colors";
+                  if is_selected() {
+                    format!("{} bg-blue-600 text-white", base)
+                  } else {
+                    format!(
+                      "{} bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600",
+                      base,
+                    )
+                  }
+                }
+                on:click={
+                  let label_clone = label_clone.clone();
+                  move |_| toggle_label(label_clone.clone())
+                }
+              >
+                {label}
+              </button>
+            }
+          }
+        />
+        <Show when=move || !selected_labels.get().is_empty()>
+          <button
+            type="button"
+            class="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline"
+            on:click=move |_| selected_labels.set(Vec::new())
+          >
+            "Clear all"
+          </button>
+        </Show>
+      </div>
+    }
+}
+
 /// Modal for creating/editing ingredients
 #[component]
 fn IngredientModal(
@@ -859,7 +601,8 @@ fn IngredientModal(
 ) -> impl IntoView {
     // Form fields
     let name = RwSignal::new(String::new());
-    let category = RwSignal::new(IngredientCategory::Other);
+    let labels = RwSignal::new(Vec::<String>::new());
+    let new_label = RwSignal::new(String::new());
     let calories = RwSignal::new(String::new());
     let protein = RwSignal::new(String::new());
     let fat = RwSignal::new(String::new());
@@ -870,7 +613,6 @@ fn IngredientModal(
     let salt = RwSignal::new(String::new());
     let package_size = RwSignal::new(String::new());
     let package_price = RwSignal::new(String::new());
-    let store = RwSignal::new(String::new());
     let error = RwSignal::new(Option::<String>::None);
     let saving = RwSignal::new(false);
 
@@ -878,7 +620,7 @@ fn IngredientModal(
     Effect::new(move || {
         if let Some(ing) = editing.get() {
             name.set(ing.name.clone());
-            category.set(ing.category);
+            labels.set(ing.labels.clone());
             calories.set(ing.calories.to_string());
             protein.set(ing.protein.to_string());
             fat.set(ing.fat.to_string());
@@ -889,11 +631,10 @@ fn IngredientModal(
             salt.set(ing.salt.to_string());
             package_size.set(ing.package_size_g.to_string());
             package_price.set(ing.package_price.to_string());
-            store.set(ing.store.clone());
         } else {
             // Reset form for new ingredient
             name.set(String::new());
-            category.set(IngredientCategory::Other);
+            labels.set(Vec::new());
             calories.set(String::new());
             protein.set(String::new());
             fat.set(String::new());
@@ -904,14 +645,34 @@ fn IngredientModal(
             salt.set(String::new());
             package_size.set(String::new());
             package_price.set(String::new());
-            store.set(String::new());
         }
+        new_label.set(String::new());
         error.set(None);
     });
 
     let close = move || {
         show.set(false);
         editing.set(None);
+    };
+
+    let add_label = move || {
+        let label_val = new_label.get().trim().to_lowercase();
+        if !label_val.is_empty() {
+            labels.update(|list| {
+                if !list.contains(&label_val) {
+                    list.push(label_val);
+                }
+            });
+            new_label.set(String::new());
+        }
+    };
+
+    let remove_label = move |idx: usize| {
+        labels.update(|list| {
+            if idx < list.len() {
+                list.remove(idx);
+            }
+        });
     };
 
     let handle_save = {
@@ -926,7 +687,7 @@ fn IngredientModal(
             let ingredient = Ingredient {
                 id: editing.get().and_then(|e| e.id),
                 name: name_val,
-                category: category.get(),
+                labels: labels.get(),
                 calories: calories.get().parse().unwrap_or(0.0),
                 protein: protein.get().parse().unwrap_or(0.0),
                 fat: fat.get().parse().unwrap_or(0.0),
@@ -937,7 +698,6 @@ fn IngredientModal(
                 salt: salt.get().parse().unwrap_or(0.0),
                 package_size_g: package_size.get().parse().unwrap_or(0.0),
                 package_price: package_price.get().parse().unwrap_or(0.0),
-                store: store.get(),
             };
 
             saving.set(true);
@@ -1001,8 +761,8 @@ fn IngredientModal(
             </Show>
 
             <div class="grid grid-cols-2 gap-4">
-              // Name and Category
-              <div class="col-span-2 sm:col-span-1">
+              // Name
+              <div class="col-span-2">
                 <label class=label_class>"Name"</label>
                 <input
                   type="text"
@@ -1012,28 +772,44 @@ fn IngredientModal(
                   placeholder="e.g., Chicken Breast"
                 />
               </div>
-              <div class="col-span-2 sm:col-span-1">
-                <label class=label_class>"Category"</label>
-                <select
-                  class=input_class
-                  on:change=move |ev| {
-                    let value = event_target_value(&ev);
-                    if let Some(cat) = IngredientCategory::parse_str(&value) {
-                      category.set(cat);
-                    }
-                  }
-                >
-                  {IngredientCategory::all()
-                    .into_iter()
-                    .map(|cat| {
-                      view! {
-                        <option value=cat.as_str() selected=move || category.get() == cat>
-                          {cat.title()}
-                        </option>
+
+              // Labels
+              <div class="col-span-2">
+                <label class=label_class>"Labels"</label>
+                <div class="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    class=input_class
+                    prop:value=move || new_label.get()
+                    on:input=move |ev| new_label.set(event_target_value(&ev))
+                    on:keypress=move |ev: web_sys::KeyboardEvent| {
+                      if ev.key() == "Enter" {
+                        ev.prevent_default();
+                        add_label();
                       }
-                    })
-                    .collect_view()}
-                </select>
+                    }
+                    placeholder="Add a label (e.g., protein, costco)"
+                  />
+                  <button
+                    type="button"
+                    class="px-3 py-2 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
+                    on:click=move |_| add_label()
+                  >
+                    "Add"
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  {move || {
+                    labels
+                      .get()
+                      .into_iter()
+                      .enumerate()
+                      .map(|(idx, label)| {
+                        view! { <LabelBadge label=label.clone() on_remove=Some(Box::new(move || remove_label(idx))) /> }
+                      })
+                      .collect_view()
+                  }}
+                </div>
               </div>
 
               // Nutrients section
@@ -1147,16 +923,6 @@ fn IngredientModal(
                   on:input=move |ev| package_price.set(event_target_value(&ev))
                 />
               </div>
-              <div class="col-span-2">
-                <label class=label_class>"Store"</label>
-                <input
-                  type="text"
-                  class=input_class
-                  prop:value=move || store.get()
-                  on:input=move |ev| store.set(event_target_value(&ev))
-                  placeholder="e.g., Whole Foods"
-                />
-              </div>
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
@@ -1183,348 +949,11 @@ fn IngredientModal(
     }
 }
 
-#[component]
-fn IngredientTable(
-    title: &'static str,
-    category: IngredientCategory,
-    ingredients: ReadSignal<Vec<Ingredient>>,
-    view_mode: ReadSignal<NutrientView>,
-    sort_column: ReadSignal<SortColumn>,
-    sort_direction: ReadSignal<SortDirection>,
-    on_header_click: impl Fn(SortColumn) + Clone + Send + Sync + 'static,
-    on_edit: impl Fn(Ingredient) + Clone + Send + Sync + 'static,
-) -> impl IntoView {
-    let auth = expect_context::<AdminAuth>();
-
-    let get_sorted_ingredients = move || {
-        let mut filtered: Vec<Ingredient> = ingredients
-            .get()
-            .into_iter()
-            .filter(|i| i.category == category)
-            .collect();
-
-        let dir = sort_direction.get();
-        let col = sort_column.get();
-        let view = view_mode.get();
-
-        if dir != SortDirection::None {
-            filtered.sort_by(|a, b| {
-                let get_value = |ing: &Ingredient| -> f32 {
-                    let raw = match col {
-                        SortColumn::Name => return 0.0, // Handle separately
-                        SortColumn::Calories => ing.calories,
-                        SortColumn::Protein => ing.protein,
-                        SortColumn::Fat => ing.fat,
-                        SortColumn::SaturatedFat => ing.saturated_fat,
-                        SortColumn::Carbs => ing.carbs,
-                        SortColumn::Sugar => ing.sugar,
-                        SortColumn::Fiber => ing.fiber,
-                        SortColumn::Salt => ing.salt,
-                        SortColumn::PackageSize => ing.package_size_g,
-                        SortColumn::Price => ing.package_price,
-                    };
-                    if view == NutrientView::Per100kcal
-                        && !matches!(
-                            col,
-                            SortColumn::PackageSize | SortColumn::Price | SortColumn::Calories
-                        )
-                    {
-                        ing.per_calorie(raw)
-                    } else {
-                        raw
-                    }
-                };
-
-                if col == SortColumn::Name {
-                    let cmp = a.name.cmp(&b.name);
-                    return if dir == SortDirection::Ascending {
-                        cmp
-                    } else {
-                        cmp.reverse()
-                    };
-                }
-
-                let val_a = get_value(a);
-                let val_b = get_value(b);
-                let cmp = val_a
-                    .partial_cmp(&val_b)
-                    .unwrap_or(std::cmp::Ordering::Equal);
-                if dir == SortDirection::Ascending {
-                    cmp
-                } else {
-                    cmp.reverse()
-                }
-            });
-        } else {
-            // Default: sort by name ascending
-            filtered.sort_by(|a, b| a.name.cmp(&b.name));
-        }
-
-        filtered
-    };
-
-    // Column width classes
-    let w_name = "w-36"; // Ingredient name
-    let w_pkg = "w-20"; // Package size
-    let w_price = "w-16"; // Price
-    let w_cal = "w-20"; // Calories
-    let w_nutr = "w-16"; // Nutrient columns (protein, fat, etc.)
-    let w_salt = "w-20"; // Salt (needs more space for mg)
-    let w_store = "w-28"; // Store
-    let w_actions = "w-16"; // Actions column
-
-    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700 dark:text-slate-300";
-
-    view! {
-      <div class="mb-8">
-        <h3 class="mb-3 text-xl font-semibold text-slate-800 dark:text-slate-200">{title}</h3>
-        <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto dark:bg-slate-800">
-          <table class="w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-            <thead class="bg-slate-50 dark:bg-slate-700">
-              <tr>
-                <SortableHeader
-                  col=SortColumn::Name
-                  label="Ingredient"
-                  width_class=w_name
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::PackageSize
-                  label="Package"
-                  width_class=w_pkg
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Price
-                  label="Price"
-                  width_class=w_price
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Calories
-                  label="Calories"
-                  width_class=w_cal
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Protein
-                  label="Protein"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Fat
-                  label="Fat"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::SaturatedFat
-                  label="Sat. Fat"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Carbs
-                  label="Carbs"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Sugar
-                  label="Sugar"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Fiber
-                  label="Fiber"
-                  width_class=w_nutr
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <SortableHeader
-                  col=SortColumn::Salt
-                  label="Salt"
-                  width_class=w_salt
-                  sort_column=sort_column
-                  sort_direction=sort_direction
-                  on_click=on_header_click.clone()
-                />
-                <th class=format!(
-                  "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
-                  w_store,
-                )>"Store"</th>
-                <Show when=move || auth.is_authenticated.get()>
-                  <th class=format!(
-                    "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
-                    w_actions,
-                  )></th>
-                </Show>
-              </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-              <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
-                {
-                  let ing_cal = ing.clone();
-                  let ing_protein = ing.clone();
-                  let ing_fat = ing.clone();
-                  let ing_sat_fat = ing.clone();
-                  let ing_carbs = ing.clone();
-                  let ing_sugar = ing.clone();
-                  let ing_fiber = ing.clone();
-                  let ing_salt = ing.clone();
-                  let ing_for_edit = ing.clone();
-                  let on_edit = on_edit.clone();
-                  // Create separate clones for each closure that needs the ingredient
-                  view! {
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                      <td class=format!(
-                        "{} font-medium text-slate-900 dark:text-slate-100 truncate",
-                        cell_class,
-                      )>{ing.name.clone()}</td>
-                      <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
-                      <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
-                      <td class=cell_class>
-                        {move || {
-                          let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };
-                          format!("{:.0} kcal", cal)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_protein.per_calorie(ing_protein.protein)
-                          } else {
-                            ing_protein.protein
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_fat.per_calorie(ing_fat.fat)
-                          } else {
-                            ing_fat.fat
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_sat_fat.per_calorie(ing_sat_fat.saturated_fat)
-                          } else {
-                            ing_sat_fat.saturated_fat
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_carbs.per_calorie(ing_carbs.carbs)
-                          } else {
-                            ing_carbs.carbs
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_sugar.per_calorie(ing_sugar.sugar)
-                          } else {
-                            ing_sugar.sugar
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_fiber.per_calorie(ing_fiber.fiber)
-                          } else {
-                            ing_fiber.fiber
-                          };
-                          format!("{:.1}g", val)
-                        }}
-                      </td>
-                      <td class=cell_class>
-                        {move || {
-                          let val = if view_mode.get() == NutrientView::Per100kcal {
-                            ing_salt.per_calorie(ing_salt.salt)
-                          } else {
-                            ing_salt.salt
-                          };
-                          format!("{:.0}mg", val)
-                        }}
-                      </td>
-                      <td class=format!("{} truncate", cell_class)>{ing.store.clone()}</td>
-                      <Show when=move || auth.is_authenticated.get()>
-                        <td class=cell_class>
-                          <button
-                            class="text-blue-600 hover:text-blue-800"
-                            title="Edit"
-                            on:click={
-                              let ing_for_edit = ing_for_edit.clone();
-                              let on_edit = on_edit.clone();
-                              move |_| on_edit(ing_for_edit.clone())
-                            }
-                          >
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </Show>
-                    </tr>
-                  }
-                }
-              </For>
-            </tbody>
-          </table>
-        </div>
-        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          {move || {
-            let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
-            format!("* Nutrient values shown {}", suffix)
-          }}
-        </p>
-      </div>
-    }
-}
-
 /// Result of parsing a single line of TSV input
 #[derive(Clone, Debug)]
 pub enum ParsedLine {
-    /// A category header line (e.g., "Protein")
-    Category(IngredientCategory),
+    /// A label header line (e.g., "Labels: protein, meat")
+    Labels(Vec<String>),
     /// A valid ingredient
     Ingredient(Ingredient),
     /// A line that couldn't be parsed (with error message)
@@ -1534,10 +963,10 @@ pub enum ParsedLine {
 }
 
 /// Parse TSV input into ingredients
-/// Format: Name\tPrice\tUnit size\tCalories\tTotal Fat\tSaturated Fat\tCarbs\tSugar\tFiber\tProtein\tSalt
+/// Format: Name\tPrice\tUnit size\tCalories\tTotal Fat\tSaturated Fat\tCarbs\tSugar\tFiber\tProtein\tSalt\t[Labels]
 fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
     let mut results = Vec::new();
-    let mut current_category = IngredientCategory::Other;
+    let mut current_labels: Vec<String> = Vec::new();
 
     for line in input.lines() {
         let line = line.trim();
@@ -1552,10 +981,15 @@ fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
         // Check if this is a header line
         if parts.len() == 1 || (parts.len() > 1 && parts[1..].iter().all(|p| p.trim().is_empty())) {
             let name = parts[0].trim();
-            // Check for category headers
-            if let Some(cat) = IngredientCategory::parse_str(&name.to_lowercase()) {
-                current_category = cat;
-                results.push(ParsedLine::Category(cat));
+            // Check for labels header (e.g., "Labels: protein, meat")
+            if name.to_lowercase().starts_with("labels:") {
+                let labels_str = name[7..].trim();
+                current_labels = labels_str
+                    .split(',')
+                    .map(|s| s.trim().to_lowercase())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                results.push(ParsedLine::Labels(current_labels.clone()));
                 continue;
             }
             // Check for the header row
@@ -1566,11 +1000,11 @@ fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
         }
 
         // Try to parse as ingredient
-        // Expected columns: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt
+        // Expected columns: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt, [Labels]
         if parts.len() < 11 {
             results.push(ParsedLine::Error(
                 line.to_string(),
-                format!("Expected 11 columns, got {}", parts.len()),
+                format!("Expected at least 11 columns, got {}", parts.len()),
             ));
             continue;
         }
@@ -1583,10 +1017,21 @@ fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
 
         let parse_f32 = |s: &str| -> f32 { s.trim().parse().unwrap_or(0.0) };
 
+        // Parse labels from 12th column if present, otherwise use current_labels
+        let labels = if parts.len() > 11 && !parts[11].trim().is_empty() {
+            parts[11]
+                .split(',')
+                .map(|s| s.trim().to_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect()
+        } else {
+            current_labels.clone()
+        };
+
         let ingredient = Ingredient {
             id: None,
             name: name.to_string(),
-            category: current_category,
+            labels,
             package_price: parse_f32(parts[1]),
             package_size_g: parse_f32(parts[2]),
             calories: parse_f32(parts[3]),
@@ -1597,7 +1042,6 @@ fn parse_tsv_ingredients(input: &str) -> Vec<ParsedLine> {
             fiber: parse_f32(parts[8]),
             protein: parse_f32(parts[9]),
             salt: parse_f32(parts[10]),
-            store: String::new(),
         };
 
         results.push(ParsedLine::Ingredient(ingredient));
@@ -1712,10 +1156,10 @@ fn BulkImportModal(
                 "Paste TSV data (tab-separated values from spreadsheet)"
               </label>
               <p class="text-xs text-slate-500 mb-2">
-                "Format: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt"
+                "Format: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt, Labels (optional)"
               </p>
               <p class="text-xs text-slate-500 mb-2">
-                "Category headers (Protein, Carbs, Veggies, Other) on their own line will set the category for following ingredients."
+                "Label headers (e.g., \"Labels: protein, meat\") on their own line will set labels for following ingredients."
               </p>
               <textarea
                 class=input_class
@@ -1751,8 +1195,8 @@ fn BulkImportModal(
                         <thead class="bg-slate-50 sticky top-0">
                           <tr>
                             <th class="px-2 py-1 text-left font-medium text-slate-600">"Status"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Category"</th>
                             <th class="px-2 py-1 text-left font-medium text-slate-600">"Name"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Labels"</th>
                             <th class="px-2 py-1 text-left font-medium text-slate-600">"Price"</th>
                             <th class="px-2 py-1 text-left font-medium text-slate-600">"Size (g)"</th>
                             <th class="px-2 py-1 text-left font-medium text-slate-600">"Cal"</th>
@@ -1770,11 +1214,11 @@ fn BulkImportModal(
                             {
                               let (_, parsed) = item;
                               match parsed {
-                                ParsedLine::Category(cat) => {
+                                ParsedLine::Labels(labels) => {
                                   view! {
                                     <tr class="bg-blue-50">
                                       <td class=cell_class colspan="13">
-                                        <span class="font-semibold text-blue-700">"Category: "{cat.title()}</span>
+                                        <span class="font-semibold text-blue-700">"Labels: "{labels.join(", ")}</span>
                                       </td>
                                     </tr>
                                   }
@@ -1786,8 +1230,22 @@ fn BulkImportModal(
                                       <td class=cell_class>
                                         <span class="text-green-600 font-medium">"OK"</span>
                                       </td>
-                                      <td class=cell_class>{ing.category.title()}</td>
                                       <td class=format!("{} font-medium", cell_class)>{ing.name.clone()}</td>
+                                      <td class=cell_class>
+                                        <div class="flex flex-wrap gap-1">
+                                          {ing
+                                            .labels
+                                            .iter()
+                                            .map(|l| {
+                                              view! {
+                                                <span class="px-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                                  {l.clone()}
+                                                </span>
+                                              }
+                                            })
+                                            .collect_view()}
+                                        </div>
+                                      </td>
                                       <td class=cell_class>
                                         {if ing.package_price > 0.0 {
                                           format!("${:.2}", ing.package_price)
@@ -1866,12 +1324,363 @@ fn BulkImportModal(
 }
 
 #[component]
+fn IngredientTable(
+    ingredients: ReadSignal<Vec<Ingredient>>,
+    view_mode: ReadSignal<NutrientView>,
+    sort_column: ReadSignal<SortColumn>,
+    sort_direction: ReadSignal<SortDirection>,
+    selected_labels: ReadSignal<Vec<String>>,
+    on_header_click: impl Fn(SortColumn) + Clone + Send + Sync + 'static,
+    on_edit: impl Fn(Ingredient) + Clone + Send + Sync + 'static,
+) -> impl IntoView {
+    let auth = expect_context::<AdminAuth>();
+
+    let get_sorted_ingredients = move || {
+        let selected = selected_labels.get();
+        let mut filtered: Vec<Ingredient> = ingredients
+            .get()
+            .into_iter()
+            .filter(|i| {
+                // If no labels selected, show all; otherwise filter by labels
+                selected.is_empty() || selected.iter().all(|l| i.labels.contains(l))
+            })
+            .collect();
+
+        let dir = sort_direction.get();
+        let col = sort_column.get();
+        let view = view_mode.get();
+
+        if dir != SortDirection::None {
+            filtered.sort_by(|a, b| {
+                let get_value = |ing: &Ingredient| -> f32 {
+                    let raw = match col {
+                        SortColumn::Name => return 0.0, // Handle separately
+                        SortColumn::Calories => ing.calories,
+                        SortColumn::Protein => ing.protein,
+                        SortColumn::Fat => ing.fat,
+                        SortColumn::SaturatedFat => ing.saturated_fat,
+                        SortColumn::Carbs => ing.carbs,
+                        SortColumn::Sugar => ing.sugar,
+                        SortColumn::Fiber => ing.fiber,
+                        SortColumn::Salt => ing.salt,
+                        SortColumn::PackageSize => ing.package_size_g,
+                        SortColumn::Price => ing.package_price,
+                    };
+                    if view == NutrientView::Per100kcal
+                        && !matches!(
+                            col,
+                            SortColumn::PackageSize | SortColumn::Price | SortColumn::Calories
+                        )
+                    {
+                        ing.per_calorie(raw)
+                    } else {
+                        raw
+                    }
+                };
+
+                if col == SortColumn::Name {
+                    let cmp = a.name.cmp(&b.name);
+                    return if dir == SortDirection::Ascending {
+                        cmp
+                    } else {
+                        cmp.reverse()
+                    };
+                }
+
+                let val_a = get_value(a);
+                let val_b = get_value(b);
+                let cmp = val_a
+                    .partial_cmp(&val_b)
+                    .unwrap_or(std::cmp::Ordering::Equal);
+                if dir == SortDirection::Ascending {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
+            });
+        } else {
+            // Default: sort by name ascending
+            filtered.sort_by(|a, b| a.name.cmp(&b.name));
+        }
+
+        filtered
+    };
+
+    // Column width classes
+    let w_name = "w-36"; // Ingredient name
+    let w_labels = "w-32"; // Labels
+    let w_pkg = "w-20"; // Package size
+    let w_price = "w-16"; // Price
+    let w_cal = "w-20"; // Calories
+    let w_nutr = "w-16"; // Nutrient columns (protein, fat, etc.)
+    let w_salt = "w-20"; // Salt (needs more space for mg)
+    let w_actions = "w-16"; // Actions column
+
+    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700 dark:text-slate-300";
+
+    view! {
+      <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto dark:bg-slate-800">
+        <table class="w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-700">
+            <tr>
+              <SortableHeader
+                col=SortColumn::Name
+                label="Ingredient"
+                width_class=w_name
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <th class=format!(
+                "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
+                w_labels,
+              )>"Labels"</th>
+              <SortableHeader
+                col=SortColumn::PackageSize
+                label="Package"
+                width_class=w_pkg
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Price
+                label="Price"
+                width_class=w_price
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Calories
+                label="Calories"
+                width_class=w_cal
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Protein
+                label="Protein"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Fat
+                label="Fat"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::SaturatedFat
+                label="Sat. Fat"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Carbs
+                label="Carbs"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Sugar
+                label="Sugar"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Fiber
+                label="Fiber"
+                width_class=w_nutr
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <SortableHeader
+                col=SortColumn::Salt
+                label="Salt"
+                width_class=w_salt
+                sort_column=sort_column
+                sort_direction=sort_direction
+                on_click=on_header_click.clone()
+              />
+              <Show when=move || auth.is_authenticated.get()>
+                <th class=format!(
+                  "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
+                  w_actions,
+                )></th>
+              </Show>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+            <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
+              {
+                let ing_cal = ing.clone();
+                let ing_protein = ing.clone();
+                let ing_fat = ing.clone();
+                let ing_sat_fat = ing.clone();
+                let ing_carbs = ing.clone();
+                let ing_sugar = ing.clone();
+                let ing_fiber = ing.clone();
+                let ing_salt = ing.clone();
+                let ing_for_edit = ing.clone();
+                let on_edit = on_edit.clone();
+                let labels = ing.labels.clone();
+                view! {
+                  <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <td class=format!(
+                      "{} font-medium text-slate-900 dark:text-slate-100 truncate",
+                      cell_class,
+                    )>{ing.name.clone()}</td>
+                    <td class=format!("{} overflow-hidden", cell_class)>
+                      <div class="flex flex-wrap gap-1">
+                        {labels
+                          .iter()
+                          .map(|l| {
+                            view! {
+                              <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded text-xs">
+                                {l.clone()}
+                              </span>
+                            }
+                          })
+                          .collect_view()}
+                      </div>
+                    </td>
+                    <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
+                    <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
+                    <td class=cell_class>
+                      {move || {
+                        let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };
+                        format!("{:.0} kcal", cal)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_protein.per_calorie(ing_protein.protein)
+                        } else {
+                          ing_protein.protein
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_fat.per_calorie(ing_fat.fat)
+                        } else {
+                          ing_fat.fat
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_sat_fat.per_calorie(ing_sat_fat.saturated_fat)
+                        } else {
+                          ing_sat_fat.saturated_fat
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_carbs.per_calorie(ing_carbs.carbs)
+                        } else {
+                          ing_carbs.carbs
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_sugar.per_calorie(ing_sugar.sugar)
+                        } else {
+                          ing_sugar.sugar
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_fiber.per_calorie(ing_fiber.fiber)
+                        } else {
+                          ing_fiber.fiber
+                        };
+                        format!("{:.1}g", val)
+                      }}
+                    </td>
+                    <td class=cell_class>
+                      {move || {
+                        let val = if view_mode.get() == NutrientView::Per100kcal {
+                          ing_salt.per_calorie(ing_salt.salt)
+                        } else {
+                          ing_salt.salt
+                        };
+                        format!("{:.0}mg", val)
+                      }}
+                    </td>
+                    <Show when=move || auth.is_authenticated.get()>
+                      <td class=cell_class>
+                        <button
+                          class="text-blue-600 hover:text-blue-800"
+                          title="Edit"
+                          on:click={
+                            let ing_for_edit = ing_for_edit.clone();
+                            let on_edit = on_edit.clone();
+                            move |_| on_edit(ing_for_edit.clone())
+                          }
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
+                      </td>
+                    </Show>
+                  </tr>
+                }
+              }
+            </For>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        {move || {
+          let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
+          format!("* Nutrient values shown {}", suffix)
+        }}
+      </p>
+    }
+}
+
+#[component]
 pub fn Ingredients() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     let (view_mode, set_view_mode) = signal(NutrientView::Per100g);
     let (sort_column, set_sort_column) = signal(SortColumn::Name);
     let (sort_direction, set_sort_direction) = signal(SortDirection::None);
+    let selected_labels = RwSignal::new(Vec::<String>::new());
 
     // Modal state
     let show_modal = RwSignal::new(false);
@@ -1982,53 +1791,48 @@ pub fn Ingredients() -> impl IntoView {
               .map(|result| {
                 match result {
                   Ok(ings) => {
+                    let all_labels: Vec<String> = {
+                      let mut labels: Vec<String> = ings.iter().flat_map(|i| i.labels.clone()).collect();
+                      labels.sort();
+                      labels.dedup();
+                      labels
+                    };
                     let (ingredients, _) = signal(ings);
-                    view! {
-                      <IngredientTable
-                        title=IngredientCategory::Protein.title()
-                        category=IngredientCategory::Protein
-                        ingredients=ingredients
-                        view_mode=view_mode
-                        sort_column=sort_column
-                        sort_direction=sort_direction
-                        on_header_click=handle_header_click
-                        on_edit=handle_edit
-                      />
+                    let (all_labels_signal, _) = signal(all_labels.clone());
+                    if ingredients.get().is_empty() {
+                      // Collect all unique labels
 
-                      <IngredientTable
-                        title=IngredientCategory::Carbs.title()
-                        category=IngredientCategory::Carbs
-                        ingredients=ingredients
-                        view_mode=view_mode
-                        sort_column=sort_column
-                        sort_direction=sort_direction
-                        on_header_click=handle_header_click
-                        on_edit=handle_edit
-                      />
+                      view! {
+                        <div class="text-center py-12">
+                          <p class="text-slate-600 dark:text-slate-400 mb-4">"No ingredients yet."</p>
+                          <Show when=move || auth.is_authenticated.get()>
+                            <p class="text-slate-500 dark:text-slate-500 text-sm">
+                              "Click \"New Ingredient\" to create your first ingredient."
+                            </p>
+                          </Show>
+                        </div>
+                      }
+                        .into_any()
+                    } else {
+                      view! {
+                        <div class="mb-4">
+                          <Show when=move || !all_labels.is_empty()>
+                            <LabelFilter all_labels=all_labels_signal selected_labels=selected_labels />
+                          </Show>
+                        </div>
 
-                      <IngredientTable
-                        title=IngredientCategory::Veggies.title()
-                        category=IngredientCategory::Veggies
-                        ingredients=ingredients
-                        view_mode=view_mode
-                        sort_column=sort_column
-                        sort_direction=sort_direction
-                        on_header_click=handle_header_click
-                        on_edit=handle_edit
-                      />
-
-                      <IngredientTable
-                        title=IngredientCategory::Other.title()
-                        category=IngredientCategory::Other
-                        ingredients=ingredients
-                        view_mode=view_mode
-                        sort_column=sort_column
-                        sort_direction=sort_direction
-                        on_header_click=handle_header_click
-                        on_edit=handle_edit
-                      />
+                        <IngredientTable
+                          ingredients=ingredients
+                          view_mode=view_mode
+                          sort_column=sort_column
+                          sort_direction=sort_direction
+                          selected_labels=selected_labels.read_only()
+                          on_header_click=handle_header_click
+                          on_edit=handle_edit
+                        />
+                      }
+                        .into_any()
                     }
-                      .into_any()
                   }
                   Err(e) => {
                     view! {

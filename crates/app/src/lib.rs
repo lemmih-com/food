@@ -29,7 +29,7 @@ pub use auth::{AdminLogin, AdminLogout, AdminValidate};
 pub use ingredients::SendD1Database;
 pub use ingredients::{
     BulkUpsertIngredients, CreateIngredient, DeleteIngredient, GetIngredients, Ingredient,
-    IngredientCategory, UpdateIngredient,
+    UpdateIngredient,
 };
 
 // Re-export recipe types for worker registration
