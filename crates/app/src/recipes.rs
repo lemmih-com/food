@@ -8,6 +8,8 @@ use server_fn::ServerFnError;
 use wasm_bindgen::JsCast;
 
 use crate::auth::AdminAuth;
+#[cfg(not(feature = "ssr"))]
+use crate::cache::{get_cache, set_cache, INGREDIENTS_CACHE_KEY, RECIPES_CACHE_KEY};
 use crate::ingredients::{get_ingredients, Ingredient};
 
 // ============================================================================
@@ -1155,9 +1157,39 @@ pub fn Recipes() -> impl IntoView {
     let show_modal = RwSignal::new(false);
     let editing_recipe = RwSignal::new(Option::<Recipe>::None);
 
-    // Fetch recipes and ingredients from server
+    // Signals to hold cached data (client-side only, loaded before resources resolve)
+    let cached_recipes = RwSignal::new(Option::<Vec<Recipe>>::None);
+    let cached_ingredients = RwSignal::new(Option::<Vec<Ingredient>>::None);
+
+    // Load cached data immediately on mount (client-side only)
+    #[cfg(not(feature = "ssr"))]
+    {
+        if let Some(cached) = get_cache::<Vec<Recipe>>(RECIPES_CACHE_KEY) {
+            cached_recipes.set(Some(cached));
+        }
+        if let Some(cached) = get_cache::<Vec<Ingredient>>(INGREDIENTS_CACHE_KEY) {
+            cached_ingredients.set(Some(cached));
+        }
+    }
+
+    // Fetch recipes and ingredients from server (works on both SSR and client)
     let recipes_resource = Resource::new(|| (), |_| get_recipes());
     let ingredients_resource = Resource::new(|| (), |_| get_ingredients());
+
+    // Update cache when resources resolve (client-side only)
+    #[cfg(not(feature = "ssr"))]
+    Effect::new(move || {
+        if let Some(Ok(recipes)) = recipes_resource.get() {
+            set_cache(RECIPES_CACHE_KEY, &recipes);
+        }
+    });
+
+    #[cfg(not(feature = "ssr"))]
+    Effect::new(move || {
+        if let Some(Ok(ingredients)) = ingredients_resource.get() {
+            set_cache(INGREDIENTS_CACHE_KEY, &ingredients);
+        }
+    });
 
     // Refetch after save/delete
     let refetch = move || {
@@ -1195,8 +1227,36 @@ pub fn Recipes() -> impl IntoView {
           </Show>
         </div>
 
+        // Show cached data while loading, with Suspense for SSR support
         <Suspense fallback=move || {
-          view! { <p class="text-slate-600 dark:text-slate-400">"Loading recipes..."</p> }
+          match (cached_recipes.get(), cached_ingredients.get()) {
+            (Some(recipes), Some(ingredients)) if !recipes.is_empty() => {
+              let (ingredients_signal, _) = signal(ingredients);
+              let is_auth = auth.is_authenticated;
+              // While resources are loading, show cached data if available
+              view! {
+                <div class="grid gap-6 lg:grid-cols-2">
+                  <For
+                    each=move || recipes.clone()
+                    key=|recipe| recipe.id.unwrap_or(0)
+                    children=move |recipe: Recipe| {
+                      let is_auth_signal = is_auth.read_only();
+                      view! { <RecipeCard recipe=recipe on_edit=handle_edit is_authenticated=is_auth_signal /> }
+                    }
+                  />
+                </div>
+                <RecipeModal
+                  show=show_modal
+                  editing=editing_recipe
+                  available_ingredients=ingredients_signal
+                  on_save=refetch
+                  on_delete=handle_delete
+                />
+              }
+                .into_any()
+            }
+            _ => view! { <p class="text-slate-600 dark:text-slate-400">"Loading recipes..."</p> }.into_any(),
+          }
         }>
           {move || {
             let recipes_result = recipes_resource.get();
@@ -1205,59 +1265,62 @@ pub fn Recipes() -> impl IntoView {
               (Some(Ok(recipes)), Some(Ok(ingredients))) => {
                 let (ingredients_signal, _) = signal(ingredients);
                 let is_auth = auth.is_authenticated;
-                if recipes.is_empty() {
-
-                  view! {
-                    <div class="text-center py-12">
-                      <p class="text-slate-600 dark:text-slate-400 mb-4">"No recipes yet."</p>
-                      <Show when=move || auth.is_authenticated.get()>
-                        <p class="text-slate-500 dark:text-slate-500 text-sm">
-                          "Click \"New Recipe\" to create your first recipe."
-                        </p>
-                      </Show>
-                    </div>
-                    <RecipeModal
-                      show=show_modal
-                      editing=editing_recipe
-                      available_ingredients=ingredients_signal
-                      on_save=refetch
-                      on_delete=handle_delete
-                    />
-                  }
-                    .into_any()
-                } else {
-                  view! {
-                    <div class="grid gap-6 lg:grid-cols-2">
-                      <For
-                        each=move || recipes.clone()
-                        key=|recipe| recipe.id.unwrap_or(0)
-                        children=move |recipe: Recipe| {
-                          let is_auth_signal = is_auth.read_only();
-                          view! { <RecipeCard recipe=recipe on_edit=handle_edit is_authenticated=is_auth_signal /> }
-                        }
+                Some(
+                  if recipes.is_empty() {
+                    view! {
+                      <div class="text-center py-12">
+                        <p class="text-slate-600 dark:text-slate-400 mb-4">"No recipes yet."</p>
+                        <Show when=move || auth.is_authenticated.get()>
+                          <p class="text-slate-500 dark:text-slate-500 text-sm">
+                            "Click \"New Recipe\" to create your first recipe."
+                          </p>
+                        </Show>
+                      </div>
+                      <RecipeModal
+                        show=show_modal
+                        editing=editing_recipe
+                        available_ingredients=ingredients_signal
+                        on_save=refetch
+                        on_delete=handle_delete
                       />
-                    </div>
-                    <RecipeModal
-                      show=show_modal
-                      editing=editing_recipe
-                      available_ingredients=ingredients_signal
-                      on_save=refetch
-                      on_delete=handle_delete
-                    />
-                  }
-                    .into_any()
-                }
+                    }
+                      .into_any()
+                  } else {
+                    view! {
+                      <div class="grid gap-6 lg:grid-cols-2">
+                        <For
+                          each=move || recipes.clone()
+                          key=|recipe| recipe.id.unwrap_or(0)
+                          children=move |recipe: Recipe| {
+                            let is_auth_signal = is_auth.read_only();
+                            view! { <RecipeCard recipe=recipe on_edit=handle_edit is_authenticated=is_auth_signal /> }
+                          }
+                        />
+                      </div>
+                      <RecipeModal
+                        show=show_modal
+                        editing=editing_recipe
+                        available_ingredients=ingredients_signal
+                        on_save=refetch
+                        on_delete=handle_delete
+                      />
+                    }
+                      .into_any()
+                  },
+                )
               }
               (Some(Err(e)), _) | (_, Some(Err(e))) => {
-                view! {
-                  <div class="rounded bg-red-100 px-4 py-3 text-red-700">
-                    <p class="font-medium">"Failed to load data"</p>
-                    <p class="text-sm">{e.to_string()}</p>
-                  </div>
-                }
-                  .into_any()
+                Some(
+                  view! {
+                    <div class="rounded bg-red-100 px-4 py-3 text-red-700">
+                      <p class="font-medium">"Failed to load data"</p>
+                      <p class="text-sm">{e.to_string()}</p>
+                    </div>
+                  }
+                    .into_any(),
+                )
               }
-              _ => view! { <p class="text-slate-600">"Loading..."</p> }.into_any(),
+              _ => None,
             }
           }}
         </Suspense>
