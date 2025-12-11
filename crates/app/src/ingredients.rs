@@ -153,61 +153,59 @@ pub async fn get_ingredients() -> Result<Vec<Ingredient>, ServerFnError> {
 
     let db = expect_context::<SendD1Database>();
 
-    // Fetch all ingredients and their labels
+    // Fetch all ingredients with labels aggregated via GROUP_CONCAT
+    // This uses a single query instead of N+1 queries
     let ingredients = SendWrapper::new(async {
         let stmt = db.inner().prepare(
-            "SELECT id, name, calories, protein, fat, saturated_fat, carbs, sugar, fiber, salt, package_size_g, package_price FROM ingredients ORDER BY name"
+            "SELECT i.id, i.name, i.calories, i.protein, i.fat, i.saturated_fat, i.carbs, i.sugar, i.fiber, i.salt, i.package_size_g, i.package_price, GROUP_CONCAT(il.label, ',') as labels
+             FROM ingredients i
+             LEFT JOIN ingredient_labels il ON i.id = il.ingredient_id
+             GROUP BY i.id
+             ORDER BY i.name"
         );
         let results = stmt.all().await?;
         let rows: Vec<serde_json::Value> = results.results::<serde_json::Value>()?;
 
-        let mut ingredients = Vec::new();
-
-        for row in rows {
-            let ingredient_id = row.get("id").and_then(|v| v.as_i64()).unwrap_or(0);
-
-            // Fetch labels for this ingredient
-            let label_stmt = db
-                .inner()
-                .prepare("SELECT label FROM ingredient_labels WHERE ingredient_id = ? ORDER BY label");
-            let label_stmt = label_stmt.bind(&[(ingredient_id as f64).into()])?;
-            let label_results = label_stmt.all().await?;
-            let label_rows: Vec<serde_json::Value> = label_results.results::<serde_json::Value>()?;
-
-            let labels: Vec<String> = label_rows
-                .into_iter()
-                .filter_map(|r| r.get("label")?.as_str().map(|s| s.to_string()))
-                .collect();
-
-            ingredients.push(Ingredient {
-                id: Some(ingredient_id),
-                name: row
-                    .get("name")
+        let ingredients: Vec<Ingredient> = rows
+            .into_iter()
+            .map(|row| {
+                // Parse comma-separated labels, handling NULL/empty case
+                let labels: Vec<String> = row
+                    .get("labels")
                     .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                labels,
-                calories: row.get("calories").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                protein: row.get("protein").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                fat: row.get("fat").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                saturated_fat: row
-                    .get("saturated_fat")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0) as f32,
-                carbs: row.get("carbs").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                sugar: row.get("sugar").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                fiber: row.get("fiber").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                salt: row.get("salt").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-                package_size_g: row
-                    .get("package_size_g")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0) as f32,
-                package_price: row
-                    .get("package_price")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(0.0) as f32,
-            });
-        }
+                    .map(|s| s.split(',').map(|l| l.to_string()).collect())
+                    .unwrap_or_default();
+
+                Ingredient {
+                    id: row.get("id").and_then(|v| v.as_i64()),
+                    name: row
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    labels,
+                    calories: row.get("calories").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    protein: row.get("protein").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    fat: row.get("fat").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    saturated_fat: row
+                        .get("saturated_fat")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0) as f32,
+                    carbs: row.get("carbs").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    sugar: row.get("sugar").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    fiber: row.get("fiber").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    salt: row.get("salt").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                    package_size_g: row
+                        .get("package_size_g")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0) as f32,
+                    package_price: row
+                        .get("package_price")
+                        .and_then(|v| v.as_f64())
+                        .unwrap_or(0.0) as f32,
+                }
+            })
+            .collect();
 
         Ok::<_, worker::Error>(ingredients)
     })
