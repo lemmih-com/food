@@ -8,6 +8,8 @@ use server_fn::ServerFnError;
 use wasm_bindgen::JsCast;
 
 use crate::auth::AdminAuth;
+#[cfg(not(feature = "ssr"))]
+use crate::cache::{get_cache, set_cache, INGREDIENTS_CACHE_KEY};
 
 // ============================================================================
 // Data Types
@@ -1661,8 +1663,27 @@ pub fn Ingredients() -> impl IntoView {
     let editing_ingredient = RwSignal::new(Option::<Ingredient>::None);
     let show_bulk_import = RwSignal::new(false);
 
-    // Fetch ingredients from server
+    // Signal to hold cached data (client-side only, loaded before resource resolves)
+    let cached_data = RwSignal::new(Option::<Vec<Ingredient>>::None);
+
+    // Load cached data immediately on mount (client-side only)
+    #[cfg(not(feature = "ssr"))]
+    {
+        if let Some(cached) = get_cache::<Vec<Ingredient>>(INGREDIENTS_CACHE_KEY) {
+            cached_data.set(Some(cached));
+        }
+    }
+
+    // Fetch ingredients from server (works on both SSR and client)
     let ingredients_resource = Resource::new(|| (), |_| get_ingredients());
+
+    // Update cache when resource resolves (client-side only)
+    #[cfg(not(feature = "ssr"))]
+    Effect::new(move || {
+        if let Some(Ok(ings)) = ingredients_resource.get() {
+            set_cache(INGREDIENTS_CACHE_KEY, &ings);
+        }
+    });
 
     // Refetch after save
     let refetch = move || {
@@ -1756,8 +1777,40 @@ pub fn Ingredients() -> impl IntoView {
           </div>
         </div>
 
+        // Show cached data while loading, with Suspense for SSR support
         <Suspense fallback=move || {
-          view! { <p class="text-slate-600 dark:text-slate-400">"Loading ingredients..."</p> }
+          match cached_data.get() {
+            Some(cached) if !cached.is_empty() => {
+              let all_labels: Vec<String> = {
+                let mut labels: Vec<String> = cached.iter().flat_map(|i| i.labels.clone()).collect();
+                labels.sort();
+                labels.dedup();
+                labels
+              };
+              let (ingredients, _) = signal(cached);
+              let (all_labels_signal, _) = signal(all_labels.clone());
+              // While resource is loading, show cached data if available
+              view! {
+                <div class="mb-4">
+                  <Show when=move || !all_labels.is_empty()>
+                    <LabelFilter all_labels=all_labels_signal selected_labels=selected_labels />
+                  </Show>
+                </div>
+
+                <IngredientTable
+                  ingredients=ingredients
+                  view_mode=view_mode
+                  sort_column=sort_column
+                  sort_direction=sort_direction
+                  selected_labels=selected_labels.read_only()
+                  on_header_click=handle_header_click
+                  on_edit=handle_edit
+                />
+              }
+                .into_any()
+            }
+            _ => view! { <p class="text-slate-600 dark:text-slate-400">"Loading ingredients..."</p> }.into_any(),
+          }
         }>
           {move || {
             ingredients_resource
@@ -1774,8 +1827,6 @@ pub fn Ingredients() -> impl IntoView {
                     let (ingredients, _) = signal(ings);
                     let (all_labels_signal, _) = signal(all_labels.clone());
                     if ingredients.get().is_empty() {
-                      // Collect all unique labels
-
                       view! {
                         <div class="text-center py-12">
                           <p class="text-slate-600 dark:text-slate-400 mb-4">"No ingredients yet."</p>
