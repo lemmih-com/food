@@ -118,11 +118,10 @@ pub fn DarkModeToggle() -> impl IntoView {
           stroke-width="2"
           stroke="currentColor"
           class=move || {
-            let base = "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out";
             if dark_mode.is_dark.get() {
-              format!("{} rotate-0 scale-100 opacity-100", base)
+              "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out rotate-0 scale-100 opacity-100"
             } else {
-              format!("{} -rotate-90 scale-0 opacity-0", base)
+              "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out -rotate-90 scale-0 opacity-0 pointer-events-none"
             }
           }
         >
@@ -140,11 +139,10 @@ pub fn DarkModeToggle() -> impl IntoView {
           stroke-width="2"
           stroke="currentColor"
           class=move || {
-            let base = "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out";
             if dark_mode.is_dark.get() {
-              format!("{} rotate-90 scale-0 opacity-0", base)
+              "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out rotate-90 scale-0 opacity-0 pointer-events-none"
             } else {
-              format!("{} rotate-0 scale-100 opacity-100", base)
+              "absolute inset-1.5 h-5 w-5 transition-all duration-300 ease-in-out rotate-0 scale-100 opacity-100"
             }
           }
         >
