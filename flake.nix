@@ -166,6 +166,7 @@
         });
       inputCssFile = pkgs.writeText "input.css" ''
         @import "tailwindcss";
+        @custom-variant dark (&:where(.dark, .dark *));
       '';
       tailwindCss = pkgs.stdenv.mkDerivation {
         pname = "food-lemmih-com-tailwindcss";
