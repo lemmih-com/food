@@ -84,13 +84,72 @@ jobs:
           echo "Website content differs from global deployment, preview needed"
         fi
 
+    - name: Create per-PR D1 database
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      id: create-db
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        PR_DB_NAME="food-pr-${{ github.event.pull_request.number }}-db"
+        echo "db_name=$PR_DB_NAME" >> $GITHUB_OUTPUT
+
+        # Check if database already exists - if so, delete it to start fresh
+        EXISTING_DB=$(npx wrangler d1 list --json | jq -r ".[] | select(.name == \"$PR_DB_NAME\") | .uuid")
+
+        if [ -n "$EXISTING_DB" ]; then
+          echo "Database $PR_DB_NAME already exists, deleting to start fresh with production data"
+          npx wrangler d1 delete "$PR_DB_NAME" --skip-confirmation || true
+        fi
+
+        echo "Creating new database: $PR_DB_NAME"
+        # Create the database and capture the output
+        CREATE_OUTPUT=$(npx wrangler d1 create "$PR_DB_NAME" 2>&1)
+        echo "$CREATE_OUTPUT"
+
+        # Extract the database ID from the output
+        DB_ID=$(echo "$CREATE_OUTPUT" | grep -oP 'database_id\s*=\s*"\K[^"]+' || echo "$CREATE_OUTPUT" | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+        echo "db_id=$DB_ID" >> $GITHUB_OUTPUT
+        echo "Created database with ID: $DB_ID"
+
+    - name: Clone production data to PR database
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        PR_DB_NAME="${{ steps.create-db.outputs.db_name }}"
+        PROD_DB_NAME="food-lemmih-com-ingredients"
+
+        echo "Exporting production database..."
+        npx wrangler d1 export "$PROD_DB_NAME" --remote --output=prod-dump.sql
+
+        echo "Importing production data into PR database..."
+        npx wrangler d1 execute "$PR_DB_NAME" --remote --file=prod-dump.sql
+
+        echo "Production data cloned to PR database"
+
+    - name: Apply migrations to PR database
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        npx wrangler d1 migrations apply ${{ steps.create-db.outputs.db_name }} --remote
+
     - name: Deploy to Cloudflare Workers
       if: steps.check-deployment.outputs.needs_deploy == 'true'
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_DB_ID: ${{ steps.create-db.outputs.db_id }}
+        PR_DB_NAME: ${{ steps.create-db.outputs.db_name }}
       run: |
+        # Update wrangler.toml to use the per-PR database for preview environment
+        sed -i "s/database_id = \"779425b4-cc96-4154-a422-bd45165d3bd1\"/database_id = \"$PR_DB_ID\"/g" wrangler.toml
+        sed -i "s/database_name = \"food-lemmih-com-ingredients\"/database_name = \"$PR_DB_NAME\"/g" wrangler.toml
+
         # Deploy using the Nix deployment app
         nix run .#deploy-preview
 
@@ -124,6 +183,7 @@ jobs:
             comment.body.includes('Preview Deployment')
           );
 
+          const prDbName = '${{ steps.create-db.outputs.db_name }}';
           const commentBody = `## 🚀 Preview Deployment
 
           Your preview deployment is ready!
@@ -131,8 +191,9 @@ jobs:
           - **Preview URL**: ${previewUrl}
           - **Content Hash**: \`${contentHash}\`
           - **Deployment**: \`${deploymentName}\`
+          - **Database**: \`${prDbName}\` (cloned from production, isolated)
 
-          This preview will be updated automatically when you push new changes.`;
+          This preview will be updated automatically when you push new changes. The database is recreated from production data on each update.`;
 
           if (botComment) {
             await github.rest.issues.updateComment({
