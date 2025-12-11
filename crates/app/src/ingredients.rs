@@ -835,7 +835,7 @@ fn SortableHeader(
     view! {
       <th
         class=format!(
-          "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none {}",
+          "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 select-none {}",
           width_class,
         )
         on:click=move |_| on_click(col)
@@ -1273,14 +1273,14 @@ fn IngredientTable(
     let w_store = "w-28"; // Store
     let w_actions = "w-16"; // Actions column
 
-    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700";
+    let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700 dark:text-slate-300";
 
     view! {
       <div class="mb-8">
-        <h3 class="mb-3 text-xl font-semibold text-slate-800">{title}</h3>
-        <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto">
-          <table class="w-full table-fixed divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50">
+        <h3 class="mb-3 text-xl font-semibold text-slate-800 dark:text-slate-200">{title}</h3>
+        <div class="rounded-lg bg-white shadow-md overflow-hidden overflow-x-auto dark:bg-slate-800">
+          <table class="w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+            <thead class="bg-slate-50 dark:bg-slate-700">
               <tr>
                 <SortableHeader
                   col=SortColumn::Name
@@ -1371,18 +1371,18 @@ fn IngredientTable(
                   on_click=on_header_click.clone()
                 />
                 <th class=format!(
-                  "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                  "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
                   w_store,
                 )>"Store"</th>
                 <Show when=move || auth.is_authenticated.get()>
                   <th class=format!(
-                    "px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider {}",
+                    "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
                     w_actions,
                   )></th>
                 </Show>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-slate-200">
+            <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
               <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
                 {
                   let ing_cal = ing.clone();
@@ -1397,8 +1397,11 @@ fn IngredientTable(
                   let on_edit = on_edit.clone();
                   // Create separate clones for each closure that needs the ingredient
                   view! {
-                    <tr class="hover:bg-slate-50">
-                      <td class=format!("{} font-medium text-slate-900 truncate", cell_class)>{ing.name.clone()}</td>
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                      <td class=format!(
+                        "{} font-medium text-slate-900 dark:text-slate-100 truncate",
+                        cell_class,
+                      )>{ing.name.clone()}</td>
                       <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
                       <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
                       <td class=cell_class>
@@ -1507,7 +1510,7 @@ fn IngredientTable(
             </tbody>
           </table>
         </div>
-        <p class="mt-2 text-xs text-slate-500">
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
           {move || {
             let suffix = if view_mode.get() == NutrientView::Per100kcal { "/100kcal" } else { "/100g" };
             format!("* Nutrient values shown {}", suffix)
@@ -1905,7 +1908,7 @@ pub fn Ingredients() -> impl IntoView {
     view! {
       <div class="mx-auto max-w-7xl py-6">
         <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
-          <h2 class="text-3xl font-bold text-slate-900">"Ingredient List"</h2>
+          <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">"Ingredient List"</h2>
           <div class="flex items-center gap-3 flex-wrap">
             <Show when=move || auth.is_authenticated.get()>
               <button
@@ -1932,15 +1935,18 @@ pub fn Ingredients() -> impl IntoView {
                 "Bulk Import"
               </button>
             </Show>
-            <div class="flex items-center gap-3 bg-white rounded-lg px-4 py-2 shadow-sm">
-              <span class="text-sm font-medium text-slate-700">"View nutrients:"</span>
+            <div class="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-lg px-4 py-2 shadow-sm">
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-300">"View nutrients:"</span>
               <button
                 class=move || {
                   let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
                   if view_mode.get() == NutrientView::Per100g {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
-                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                    format!(
+                      "{} bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600",
+                      base,
+                    )
                   }
                 }
                 on:click=move |_| set_view_mode.set(NutrientView::Per100g)
@@ -1953,7 +1959,10 @@ pub fn Ingredients() -> impl IntoView {
                   if view_mode.get() == NutrientView::Per100kcal {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
-                    format!("{} bg-slate-100 text-slate-700 hover:bg-slate-200", base)
+                    format!(
+                      "{} bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600",
+                      base,
+                    )
                   }
                 }
                 on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
@@ -1965,7 +1974,7 @@ pub fn Ingredients() -> impl IntoView {
         </div>
 
         <Suspense fallback=move || {
-          view! { <p class="text-slate-600">"Loading ingredients..."</p> }
+          view! { <p class="text-slate-600 dark:text-slate-400">"Loading ingredients..."</p> }
         }>
           {move || {
             ingredients_resource

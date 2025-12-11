@@ -166,8 +166,8 @@ fn PresetButtons(
     };
 
     view! {
-      <div class="mb-6 rounded-lg bg-white p-6 shadow-md">
-        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Load Preset"</h3>
+      <div class="mb-6 rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Load Preset"</h3>
         <div class="flex flex-wrap gap-3">
           <button
             class="rounded bg-slate-600 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
@@ -205,11 +205,13 @@ fn DailyGoals(
     set_daily_calories: WriteSignal<i32>,
 ) -> impl IntoView {
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
-        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Goals"</h3>
+      <div class="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Daily Goals"</h3>
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">"Target Calories per Day"</label>
+            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              "Target Calories per Day"
+            </label>
             <input
               type="number"
               prop:value=move || daily_calories.get()
@@ -218,9 +220,9 @@ fn DailyGoals(
                   set_daily_calories.set(val.max(0));
                 }
               }
-              class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <p class="mt-1 text-xs text-slate-500">"Your target calorie intake per day"</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">"Your target calorie intake per day"</p>
           </div>
         </div>
       </div>
@@ -343,7 +345,7 @@ fn MacroInputRow(
           {move || if locked_macro.get() == Some(macro_type) { "🔒" } else { "🔓" }}
         </button>
         <div class=format!("h-3 w-3 rounded-sm {}", color_class)></div>
-        <span class="w-24 text-sm font-medium text-slate-700">{label}</span>
+        <span class="w-24 text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
         <input
           type="number"
           min="5"
@@ -357,9 +359,9 @@ fn MacroInputRow(
               }
             }
           }
-          class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+          class="w-16 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
         />
-        <span class="text-sm text-slate-500">"%"</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">"%"</span>
         <input
           type="number"
           min="0"
@@ -372,9 +374,9 @@ fn MacroInputRow(
               }
             }
           }
-          class="w-16 rounded border border-slate-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
+          class="w-16 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
         />
-        <span class="text-sm text-slate-500">"g"</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">"g"</span>
       </div>
     }
 }
@@ -550,14 +552,14 @@ fn MacroDistribution(
     };
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
-        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Macro Distribution"</h3>
+      <div class="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Macro Distribution"</h3>
 
         <div class="flex flex-col md:flex-row gap-6">
           <MacroPieChart protein_pct=protein_pct carbs_pct=carbs_pct fat_pct=fat_pct />
 
           <div class="flex-1 space-y-3">
-            <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            <div class="rounded bg-blue-50 dark:bg-blue-900/30 px-3 py-2 text-xs text-blue-800 dark:text-blue-300">
               "Lock a macro to prevent it from auto-adjusting when others change"
             </div>
 
@@ -634,15 +636,15 @@ fn DailyLimits(
     });
 
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
-        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Limits"</h3>
+      <div class="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Daily Limits"</h3>
         <div class="space-y-4">
           // Salt/Sodium with linked inputs
           <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Salt Limit"</label>
+            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">"Daily Salt Limit"</label>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="mb-1 block text-xs text-slate-500">"Sodium (mg)"</label>
+                <label class="mb-1 block text-xs text-slate-500 dark:text-slate-400">"Sodium (mg)"</label>
                 <input
                   type="number"
                   prop:value=move || sodium_mg.get()
@@ -651,11 +653,11 @@ fn DailyLimits(
                       set_sodium_mg.set(val.max(0));
                     }
                   }
-                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label class="mb-1 block text-xs text-slate-500">"Salt (g)"</label>
+                <label class="mb-1 block text-xs text-slate-500 dark:text-slate-400">"Salt (g)"</label>
                 <input
                   type="number"
                   step="0.1"
@@ -666,19 +668,23 @@ fn DailyLimits(
                       set_sodium_mg.set(sodium.max(0));
                     }
                   }
-                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
-            <p class="mt-1 text-xs text-slate-500">"Recommended: 2300mg sodium / 5.8g salt (US), 2360mg / 6g (UK)"</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              "Recommended: 2300mg sodium / 5.8g salt (US), 2360mg / 6g (UK)"
+            </p>
           </div>
 
           // Saturated Fat with dual inputs (grams and percentage)
           <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">"Daily Saturated Fat Limit"</label>
+            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              "Daily Saturated Fat Limit"
+            </label>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="mb-1 block text-xs text-slate-500">"Grams"</label>
+                <label class="mb-1 block text-xs text-slate-500 dark:text-slate-400">"Grams"</label>
                 <input
                   type="number"
                   prop:value=move || sat_fat_grams.get()
@@ -687,11 +693,11 @@ fn DailyLimits(
                       set_sat_fat_grams.set(val.max(0));
                     }
                   }
-                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label class="mb-1 block text-xs text-slate-500">"% of Daily Calories"</label>
+                <label class="mb-1 block text-xs text-slate-500 dark:text-slate-400">"% of Daily Calories"</label>
                 <input
                   type="number"
                   step="0.1"
@@ -703,11 +709,11 @@ fn DailyLimits(
                       set_sat_fat_grams.set(grams.max(0));
                     }
                   }
-                  class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
               "Recommended: Less than 10% of daily calories (AHA recommends <6% for heart health)"
             </p>
           </div>
@@ -720,11 +726,13 @@ fn DailyLimits(
 #[component]
 fn DailyMinimums(fiber_min: ReadSignal<i32>, set_fiber_min: WriteSignal<i32>) -> impl IntoView {
     view! {
-      <div class="rounded-lg bg-white p-6 shadow-md">
-        <h3 class="mb-4 text-xl font-semibold text-slate-900">"Daily Minimums"</h3>
+      <div class="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md">
+        <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Daily Minimums"</h3>
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">"Minimum Fiber Intake (g)"</label>
+            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              "Minimum Fiber Intake (g)"
+            </label>
             <input
               type="number"
               prop:value=move || fiber_min.get()
@@ -733,9 +741,9 @@ fn DailyMinimums(fiber_min: ReadSignal<i32>, set_fiber_min: WriteSignal<i32>) ->
                   set_fiber_min.set(val.max(0));
                 }
               }
-              class="w-full rounded border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <p class="mt-1 text-xs text-slate-500">"Recommended: 25-30g per day for adults"</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">"Recommended: 25-30g per day for adults"</p>
           </div>
         </div>
       </div>
@@ -784,7 +792,7 @@ pub fn Settings() -> impl IntoView {
 
     view! {
       <div class="mx-auto max-w-4xl py-6">
-        <h2 class="mb-6 text-3xl font-bold text-slate-900">"Settings"</h2>
+        <h2 class="mb-6 text-3xl font-bold text-slate-900 dark:text-slate-100">"Settings"</h2>
 
         <PresetButtons
           set_daily_calories=set_daily_calories
