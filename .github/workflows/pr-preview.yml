@@ -90,8 +90,11 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
-        echo "Exporting production data (data only, no schema)..."
-        nix develop -c wrangler d1 export food-lemmih-com-ingredients --remote --no-schema --output=prod-data.sql
+        echo "Exporting production data (data only, no schema, excluding d1_migrations)..."
+        # Export only data tables, excluding the d1_migrations table which is managed by wrangler
+        nix develop -c wrangler d1 export food-lemmih-com-ingredients --remote --no-schema \
+          --table=ingredients --table=recipes --table=recipe_ingredients --table=ingredient_labels \
+          --output=prod-data.sql
 
     - name: Create per-PR D1 database
       if: steps.check-deployment.outputs.needs_deploy == 'true'
