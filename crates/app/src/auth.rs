@@ -417,11 +417,11 @@ fn PinModalContent(
           }
         }
       >
-        <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <div class="w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
           <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-900">"Admin Access"</h2>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">"Admin Access"</h2>
             <button
-              class="text-slate-500 hover:text-slate-700"
+              class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               on:click={
                 let do_close = do_close.clone();
                 move |_| do_close()
@@ -433,7 +433,7 @@ fn PinModalContent(
             </button>
           </div>
 
-          <p class="mb-4 text-sm text-slate-600">"Enter your 4-digit admin PIN:"</p>
+          <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">"Enter your 4-digit admin PIN:"</p>
 
           <div class="mb-4 flex justify-center gap-3">
             {pin_digits
@@ -447,7 +447,7 @@ fn PinModalContent(
                     maxlength="1"
                     inputmode="numeric"
                     pattern="[0-9]*"
-                    class="h-14 w-12 rounded border border-slate-300 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="h-14 w-12 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-center text-2xl focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     prop:value=move || digit.get()
                     on:input={
                       let do_submit = do_submit.clone();
@@ -479,12 +479,14 @@ fn PinModalContent(
           </div>
 
           <Show when=move || auth.error_message.get().is_some()>
-            <p class="mb-4 text-sm text-red-600">{move || auth.error_message.get().unwrap_or_default()}</p>
+            <p class="mb-4 text-sm text-red-600 dark:text-red-400">
+              {move || auth.error_message.get().unwrap_or_default()}
+            </p>
           </Show>
 
           <div class="flex gap-3">
             <button
-              class="flex-1 rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+              class="flex-1 rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
               on:click={
                 let do_close = do_close.clone();
                 move |_| do_close()
@@ -493,7 +495,7 @@ fn PinModalContent(
               "Cancel"
             </button>
             <button
-              class="flex-1 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+              class="flex-1 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
               on:click={
                 let do_submit = do_submit.clone();
                 move |_| do_submit()

@@ -724,8 +724,8 @@ fn IngredientModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 mb-1";
+    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+    let label_class = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
 
     view! {
       <Show when=move || show.get()>
@@ -742,12 +742,15 @@ fn IngredientModal(
             }
           }
         >
-          <div class="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl mx-4">
+          <div class="w-full max-w-2xl rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl mx-4">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-bold text-slate-900">
+              <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {move || if editing.get().is_some() { "Edit Ingredient" } else { "New Ingredient" }}
               </h2>
-              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+              <button
+                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                on:click=move |_| close()
+              >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -755,7 +758,7 @@ fn IngredientModal(
             </div>
 
             <Show when=move || error.get().is_some()>
-              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+              <div class="mb-4 rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 text-sm text-red-700 dark:text-red-400">
                 {move || error.get().unwrap_or_default()}
               </div>
             </Show>
@@ -814,7 +817,9 @@ fn IngredientModal(
 
               // Nutrients section
               <div class="col-span-2">
-                <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Nutrients (per 100g)"</h3>
+                <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 mt-2">
+                  "Nutrients (per 100g)"
+                </h3>
               </div>
 
               <div>
@@ -900,7 +905,9 @@ fn IngredientModal(
 
               // Package info section
               <div class="col-span-2">
-                <h3 class="text-sm font-semibold text-slate-600 mb-2 mt-2">"Package Information"</h3>
+                <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2 mt-2">
+                  "Package Information"
+                </h3>
               </div>
 
               <div>
@@ -927,13 +934,13 @@ fn IngredientModal(
 
             <div class="mt-6 flex justify-end gap-3">
               <button
-                class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
                 on:click=move |_| close()
               >
                 "Cancel"
               </button>
               <button
-                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
                 disabled=move || saving.get()
                 on:click={
                   let handle_save = handle_save.clone();
@@ -1117,8 +1124,8 @@ fn BulkImportModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono";
-    let cell_class = "px-2 py-1 text-xs border-b border-slate-200";
+    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono";
+    let cell_class = "px-2 py-1 text-xs border-b border-slate-200 dark:border-slate-600";
 
     view! {
       <Show when=move || show.get()>
@@ -1135,10 +1142,13 @@ fn BulkImportModal(
             }
           }
         >
-          <div class="w-full max-w-6xl rounded-lg bg-white p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div class="w-full max-w-6xl rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-bold text-slate-900">"Bulk Import Ingredients"</h2>
-              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">"Bulk Import Ingredients"</h2>
+              <button
+                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                on:click=move |_| close()
+              >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1146,19 +1156,19 @@ fn BulkImportModal(
             </div>
 
             <Show when=move || error.get().is_some()>
-              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+              <div class="mb-4 rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 text-sm text-red-700 dark:text-red-400">
                 {move || error.get().unwrap_or_default()}
               </div>
             </Show>
 
             <div class="mb-4">
-              <label class="block text-sm font-medium text-slate-700 mb-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 "Paste TSV data (tab-separated values from spreadsheet)"
               </label>
-              <p class="text-xs text-slate-500 mb-2">
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
                 "Format: Name, Price, Unit size, Calories, Total Fat, Saturated Fat, Carbs, Sugar, Fiber, Protein, Salt, Labels (optional)"
               </p>
-              <p class="text-xs text-slate-500 mb-2">
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
                 "Label headers (e.g., \"Labels: protein, meat\") on their own line will set labels for following ingredients."
               </p>
               <textarea
@@ -1172,41 +1182,48 @@ fn BulkImportModal(
 
             // Preview section
             <div class="mb-4">
-              <h3 class="text-sm font-semibold text-slate-700 mb-2">"Preview"</h3>
+              <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">"Preview"</h3>
               {move || {
                 let results = parsed_results.get();
                 let ingredient_count = results.iter().filter(|p| matches!(p, ParsedLine::Ingredient(_))).count();
                 let error_count = results.iter().filter(|p| matches!(p, ParsedLine::Error(_, _))).count();
 
                 view! {
-                  <div class="text-sm text-slate-600 mb-2">
+                  <div class="text-sm text-slate-600 dark:text-slate-400 mb-2">
                     <span class="font-medium">{ingredient_count}</span>
                     " ingredients to import"
                     {if error_count > 0 {
-                      view! { <span class="text-red-600 ml-2">"("{error_count}" errors)"</span> }.into_any()
+                      view! { <span class="text-red-600 dark:text-red-400 ml-2">"("{error_count}" errors)"</span> }
+                        .into_any()
                     } else {
                       view! { <span></span> }.into_any()
                     }}
                   </div>
 
                   <Show when=move || !results.is_empty()>
-                    <div class="rounded border border-slate-200 overflow-x-auto max-h-64 overflow-y-auto">
+                    <div class="rounded border border-slate-200 dark:border-slate-600 overflow-x-auto max-h-64 overflow-y-auto">
                       <table class="w-full text-xs">
-                        <thead class="bg-slate-50 sticky top-0">
+                        <thead class="bg-slate-50 dark:bg-slate-700 sticky top-0">
                           <tr>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Status"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Name"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Labels"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Price"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Size (g)"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Cal"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Fat"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Sat. Fat"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Carbs"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Sugar"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Fiber"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Protein"</th>
-                            <th class="px-2 py-1 text-left font-medium text-slate-600">"Salt"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Status"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Name"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Labels"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Price"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">
+                              "Size (g)"
+                            </th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Cal"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Fat"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">
+                              "Sat. Fat"
+                            </th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Carbs"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Sugar"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Fiber"</th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">
+                              "Protein"
+                            </th>
+                            <th class="px-2 py-1 text-left font-medium text-slate-600 dark:text-slate-300">"Salt"</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1216,9 +1233,11 @@ fn BulkImportModal(
                               match parsed {
                                 ParsedLine::Labels(labels) => {
                                   view! {
-                                    <tr class="bg-blue-50">
+                                    <tr class="bg-blue-50 dark:bg-blue-900/30">
                                       <td class=cell_class colspan="13">
-                                        <span class="font-semibold text-blue-700">"Labels: "{labels.join(", ")}</span>
+                                        <span class="font-semibold text-blue-700 dark:text-blue-400">
+                                          "Labels: "{labels.join(", ")}
+                                        </span>
                                       </td>
                                     </tr>
                                   }
@@ -1226,9 +1245,9 @@ fn BulkImportModal(
                                 }
                                 ParsedLine::Ingredient(ing) => {
                                   view! {
-                                    <tr class="hover:bg-slate-50">
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100">
                                       <td class=cell_class>
-                                        <span class="text-green-600 font-medium">"OK"</span>
+                                        <span class="text-green-600 dark:text-green-400 font-medium">"OK"</span>
                                       </td>
                                       <td class=format!("{} font-medium", cell_class)>{ing.name.clone()}</td>
                                       <td class=cell_class>
@@ -1238,7 +1257,7 @@ fn BulkImportModal(
                                             .iter()
                                             .map(|l| {
                                               view! {
-                                                <span class="px-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                                <span class="px-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs">
                                                   {l.clone()}
                                                 </span>
                                               }
@@ -1268,13 +1287,15 @@ fn BulkImportModal(
                                 }
                                 ParsedLine::Error(line, err) => {
                                   view! {
-                                    <tr class="bg-red-50">
+                                    <tr class="bg-red-50 dark:bg-red-900/30">
                                       <td class=cell_class>
-                                        <span class="text-red-600 font-medium">"Error"</span>
+                                        <span class="text-red-600 dark:text-red-400 font-medium">"Error"</span>
                                       </td>
                                       <td class=cell_class colspan="12">
-                                        <span class="text-red-600">{err}</span>
-                                        <span class="text-slate-500 ml-2 truncate block max-w-md">{line}</span>
+                                        <span class="text-red-600 dark:text-red-400">{err}</span>
+                                        <span class="text-slate-500 dark:text-slate-400 ml-2 truncate block max-w-md">
+                                          {line}
+                                        </span>
                                       </td>
                                     </tr>
                                   }
@@ -1294,13 +1315,13 @@ fn BulkImportModal(
 
             <div class="mt-6 flex justify-end gap-3">
               <button
-                class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
                 on:click=move |_| close()
               >
                 "Cancel"
               </button>
               <button
-                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
                 disabled=move || importing.get() || get_ingredients_to_import().is_empty()
                 on:click={
                   let handle_import = handle_import.clone();
