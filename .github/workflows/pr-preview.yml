@@ -112,6 +112,10 @@ jobs:
         echo "db_id=$DB_ID" >> $GITHUB_OUTPUT
         echo "Created database with ID: $DB_ID"
 
+        # Update wrangler.toml to use the per-PR database (needed for migrations and data import)
+        sed -i "s/database_id = \"779425b4-cc96-4154-a422-bd45165d3bd1\"/database_id = \"$DB_ID\"/g" wrangler.toml
+        sed -i "s/database_name = \"food-lemmih-com-ingredients\"/database_name = \"$PR_DB_NAME\"/g" wrangler.toml
+
     - name: Apply migrations to PR database
       if: steps.check-deployment.outputs.needs_deploy == 'true'
       env:
@@ -127,10 +131,10 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         PR_DB_NAME="${{ steps.create-db.outputs.db_name }}"
-        PROD_DB_NAME="food-lemmih-com-ingredients"
 
         echo "Exporting production data (schema already created by migrations)..."
-        nix develop -c wrangler d1 export "$PROD_DB_NAME" --remote --no-schema --output=prod-data.sql
+        # Note: We use the production database ID directly since wrangler.toml now points to PR database
+        nix develop -c wrangler d1 export "779425b4-cc96-4154-a422-bd45165d3bd1" --remote --no-schema --output=prod-data.sql
 
         echo "Importing production data into PR database..."
         nix develop -c wrangler d1 execute "$PR_DB_NAME" --remote --file=prod-data.sql
@@ -143,14 +147,8 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
-        PR_DB_ID: ${{ steps.create-db.outputs.db_id }}
-        PR_DB_NAME: ${{ steps.create-db.outputs.db_name }}
       run: |
-        # Update wrangler.toml to use the per-PR database for preview environment
-        sed -i "s/database_id = \"779425b4-cc96-4154-a422-bd45165d3bd1\"/database_id = \"$PR_DB_ID\"/g" wrangler.toml
-        sed -i "s/database_name = \"food-lemmih-com-ingredients\"/database_name = \"$PR_DB_NAME\"/g" wrangler.toml
-
-        # Deploy using the Nix deployment app
+        # Deploy using the Nix deployment app (wrangler.toml already updated with PR database)
         nix run .#deploy-preview
 
     - name: Set preview secrets
