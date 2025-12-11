@@ -112,6 +112,14 @@ jobs:
         echo "db_id=$DB_ID" >> $GITHUB_OUTPUT
         echo "Created database with ID: $DB_ID"
 
+    - name: Apply migrations to PR database
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        nix develop -c wrangler d1 migrations apply ${{ steps.create-db.outputs.db_name }} --remote
+
     - name: Clone production data to PR database
       if: steps.check-deployment.outputs.needs_deploy == 'true'
       env:
@@ -121,21 +129,13 @@ jobs:
         PR_DB_NAME="${{ steps.create-db.outputs.db_name }}"
         PROD_DB_NAME="food-lemmih-com-ingredients"
 
-        echo "Exporting production database..."
-        nix develop -c wrangler d1 export "$PROD_DB_NAME" --remote --output=prod-dump.sql
+        echo "Exporting production data (schema already created by migrations)..."
+        nix develop -c wrangler d1 export "$PROD_DB_NAME" --remote --no-schema --output=prod-data.sql
 
         echo "Importing production data into PR database..."
-        nix develop -c wrangler d1 execute "$PR_DB_NAME" --remote --file=prod-dump.sql
+        nix develop -c wrangler d1 execute "$PR_DB_NAME" --remote --file=prod-data.sql
 
         echo "Production data cloned to PR database"
-
-    - name: Apply migrations to PR database
-      if: steps.check-deployment.outputs.needs_deploy == 'true'
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      run: |
-        nix develop -c wrangler d1 migrations apply ${{ steps.create-db.outputs.db_name }} --remote
 
     - name: Deploy to Cloudflare Workers
       if: steps.check-deployment.outputs.needs_deploy == 'true'
