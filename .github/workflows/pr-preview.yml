@@ -145,7 +145,13 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         echo "Importing production data into PR database..."
-        nix develop -c wrangler d1 execute ${{ steps.create-db.outputs.db_name }} --remote --file=prod-data.sql
+        # Wrap the import with foreign key disable/enable to avoid constraint violations during import
+        {
+          echo "PRAGMA foreign_keys = OFF;"
+          cat prod-data.sql
+          echo "PRAGMA foreign_keys = ON;"
+        } > prod-data-import.sql
+        nix develop -c wrangler d1 execute ${{ steps.create-db.outputs.db_name }} --remote --file=prod-data-import.sql
         echo "Production data imported to PR database"
 
     - name: Deploy to Cloudflare Workers
