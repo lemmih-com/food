@@ -1405,10 +1405,7 @@ fn IngredientTable(
     };
 
     // Column width classes
-    let w_name = "w-36"; // Ingredient name
-    let w_labels = "w-32"; // Labels
-    let w_pkg = "w-20"; // Package size
-    let w_price = "w-16"; // Price
+    let w_name = "w-64"; // Ingredient name (wider to compensate for removed columns)
     let w_cal = "w-20"; // Calories
     let w_nutr = "w-16"; // Nutrient columns (protein, fat, etc.)
     let w_salt = "w-20"; // Salt (needs more space for mg)
@@ -1425,26 +1422,6 @@ fn IngredientTable(
                 col=SortColumn::Name
                 label="Ingredient"
                 width_class=w_name
-                sort_column=sort_column
-                sort_direction=sort_direction
-                on_click=on_header_click.clone()
-              />
-              <th class=format!(
-                "px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider {}",
-                w_labels,
-              )>"Labels"</th>
-              <SortableHeader
-                col=SortColumn::PackageSize
-                label="Package"
-                width_class=w_pkg
-                sort_column=sort_column
-                sort_direction=sort_direction
-                on_click=on_header_click.clone()
-              />
-              <SortableHeader
-                col=SortColumn::Price
-                label="Price"
-                width_class=w_price
                 sort_column=sort_column
                 sort_direction=sort_direction
                 on_click=on_header_click.clone()
@@ -1535,28 +1512,27 @@ fn IngredientTable(
                 let ing_for_edit = ing.clone();
                 let on_edit = on_edit.clone();
                 let labels = ing.labels.clone();
+                let tooltip = {
+                  let mut parts = Vec::new();
+                  if !labels.is_empty() {
+                    parts.push(format!("Labels: {}", labels.join(", ")));
+                  }
+                  parts.push(format!("Package: {}g", ing.package_size_g));
+                  parts.push(format!("Price: ${:.2}", ing.package_price));
+                  parts.join("\n")
+                };
+                // Build tooltip with labels, package size, and price
                 view! {
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                    <td class=format!(
-                      "{} font-medium text-slate-900 dark:text-slate-100 truncate",
-                      cell_class,
-                    )>{ing.name.clone()}</td>
-                    <td class=format!("{} overflow-hidden", cell_class)>
-                      <div class="flex flex-wrap gap-1">
-                        {labels
-                          .iter()
-                          .map(|l| {
-                            view! {
-                              <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded text-xs">
-                                {l.clone()}
-                              </span>
-                            }
-                          })
-                          .collect_view()}
-                      </div>
+                    <td
+                      class=format!(
+                        "{} font-medium text-slate-900 dark:text-slate-100 truncate cursor-help",
+                        cell_class,
+                      )
+                      title=tooltip
+                    >
+                      {ing.name.clone()}
                     </td>
-                    <td class=cell_class>{format!("{}g", ing.package_size_g)}</td>
-                    <td class=cell_class>{format!("${:.2}", ing.package_price)}</td>
                     <td class=cell_class>
                       {move || {
                         let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };

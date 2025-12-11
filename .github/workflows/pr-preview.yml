@@ -84,6 +84,20 @@ jobs:
           echo "Website content differs from global deployment, preview needed"
         fi
 
+    - name: Export production data
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        echo "Exporting production data (data only, no schema)..."
+        nix develop -c wrangler d1 export food-lemmih-com-ingredients --remote --no-schema --output=prod-data-raw.sql
+
+        # Filter out d1_migrations table data which is managed by wrangler
+        echo "Filtering out d1_migrations table..."
+        grep -v "INSERT INTO \"*d1_migrations\"*" prod-data-raw.sql > prod-data.sql || true
+        echo "Production data export complete"
+
     - name: Create per-PR D1 database
       if: steps.check-deployment.outputs.needs_deploy == 'true'
       id: create-db
@@ -95,16 +109,16 @@ jobs:
         echo "db_name=$PR_DB_NAME" >> $GITHUB_OUTPUT
 
         # Check if database already exists - if so, delete it to start fresh
-        EXISTING_DB=$(npx wrangler d1 list --json | jq -r ".[] | select(.name == \"$PR_DB_NAME\") | .uuid")
+        EXISTING_DB=$(nix develop -c wrangler d1 list --json | jq -r ".[] | select(.name == \"$PR_DB_NAME\") | .uuid")
 
         if [ -n "$EXISTING_DB" ]; then
           echo "Database $PR_DB_NAME already exists, deleting to start fresh with production data"
-          npx wrangler d1 delete "$PR_DB_NAME" --skip-confirmation || true
+          nix develop -c wrangler d1 delete "$PR_DB_NAME" --skip-confirmation || true
         fi
 
         echo "Creating new database: $PR_DB_NAME"
         # Create the database and capture the output
-        CREATE_OUTPUT=$(npx wrangler d1 create "$PR_DB_NAME" 2>&1)
+        CREATE_OUTPUT=$(nix develop -c wrangler d1 create "$PR_DB_NAME" 2>&1)
         echo "$CREATE_OUTPUT"
 
         # Extract the database ID from the output
@@ -112,22 +126,9 @@ jobs:
         echo "db_id=$DB_ID" >> $GITHUB_OUTPUT
         echo "Created database with ID: $DB_ID"
 
-    - name: Clone production data to PR database
-      if: steps.check-deployment.outputs.needs_deploy == 'true'
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      run: |
-        PR_DB_NAME="${{ steps.create-db.outputs.db_name }}"
-        PROD_DB_NAME="food-lemmih-com-ingredients"
-
-        echo "Exporting production database..."
-        npx wrangler d1 export "$PROD_DB_NAME" --remote --output=prod-dump.sql
-
-        echo "Importing production data into PR database..."
-        npx wrangler d1 execute "$PR_DB_NAME" --remote --file=prod-dump.sql
-
-        echo "Production data cloned to PR database"
+        # Update wrangler.toml to use the per-PR database (needed for migrations and data import)
+        sed -i "s/database_id = \"779425b4-cc96-4154-a422-bd45165d3bd1\"/database_id = \"$DB_ID\"/g" wrangler.toml
+        sed -i "s/database_name = \"food-lemmih-com-ingredients\"/database_name = \"$PR_DB_NAME\"/g" wrangler.toml
 
     - name: Apply migrations to PR database
       if: steps.check-deployment.outputs.needs_deploy == 'true'
@@ -135,7 +136,23 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
-        npx wrangler d1 migrations apply ${{ steps.create-db.outputs.db_name }} --remote
+        nix develop -c wrangler d1 migrations apply ${{ steps.create-db.outputs.db_name }} --remote
+
+    - name: Import production data to PR database
+      if: steps.check-deployment.outputs.needs_deploy == 'true'
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        echo "Importing production data into PR database..."
+        # Wrap the import with foreign key disable/enable to avoid constraint violations during import
+        {
+          echo "PRAGMA foreign_keys = OFF;"
+          cat prod-data.sql
+          echo "PRAGMA foreign_keys = ON;"
+        } > prod-data-import.sql
+        nix develop -c wrangler d1 execute ${{ steps.create-db.outputs.db_name }} --remote --file=prod-data-import.sql
+        echo "Production data imported to PR database"
 
     - name: Deploy to Cloudflare Workers
       if: steps.check-deployment.outputs.needs_deploy == 'true'
@@ -143,14 +160,8 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
-        PR_DB_ID: ${{ steps.create-db.outputs.db_id }}
-        PR_DB_NAME: ${{ steps.create-db.outputs.db_name }}
       run: |
-        # Update wrangler.toml to use the per-PR database for preview environment
-        sed -i "s/database_id = \"779425b4-cc96-4154-a422-bd45165d3bd1\"/database_id = \"$PR_DB_ID\"/g" wrangler.toml
-        sed -i "s/database_name = \"food-lemmih-com-ingredients\"/database_name = \"$PR_DB_NAME\"/g" wrangler.toml
-
-        # Deploy using the Nix deployment app
+        # Deploy using the Nix deployment app (wrangler.toml already updated with PR database)
         nix run .#deploy-preview
 
     - name: Set preview secrets
@@ -160,7 +171,7 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         # Set ADMIN_PIN secret on the preview worker
-        echo "${{ secrets.ADMIN_PIN }}" | npx wrangler secret put ADMIN_PIN --name "food-pr-${{ github.event.pull_request.number }}"
+        echo "${{ secrets.ADMIN_PIN }}" | nix develop -c wrangler secret put ADMIN_PIN --name "food-pr-${{ github.event.pull_request.number }}"
 
     - name: Comment on PR
       if: steps.check-deployment.outputs.needs_deploy == 'true'
