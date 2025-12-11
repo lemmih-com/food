@@ -518,12 +518,12 @@ fn IngredientSelector(
         });
     };
 
-    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 
     view! {
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">"Add Ingredient"</label>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">"Add Ingredient"</label>
           <select
             class=input_class
             on:change=move |ev| {
@@ -557,7 +557,7 @@ fn IngredientSelector(
         </div>
 
         <Show when=move || !selected_ingredients.get().is_empty()>
-          <div class="rounded border border-slate-200 divide-y divide-slate-200">
+          <div class="rounded border border-slate-200 dark:border-slate-600 divide-y divide-slate-200 dark:divide-slate-600">
             {move || {
               selected_ingredients
                 .get()
@@ -569,13 +569,13 @@ fn IngredientSelector(
                   let use_whole = ing.use_whole_package;
                   let amount = ing.amount_grams;
                   view! {
-                    <div class="p-3 flex flex-wrap items-center gap-3 bg-white">
-                      <span class="font-medium text-slate-900 min-w-[120px]">{ing_name}</span>
+                    <div class="p-3 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-700">
+                      <span class="font-medium text-slate-900 dark:text-slate-100 min-w-[120px]">{ing_name}</span>
                       <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1 text-sm text-slate-600">
+                        <label class="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
                           <input
                             type="checkbox"
-                            class="rounded border-slate-300"
+                            class="rounded border-slate-300 dark:border-slate-600"
                             prop:checked=use_whole
                             on:change=move |_| toggle_whole_package(idx)
                           />
@@ -590,7 +590,7 @@ fn IngredientSelector(
                             type="number"
                             step="1"
                             min="1"
-                            class="w-20 rounded border border-slate-300 px-2 py-1 text-sm"
+                            class="w-20 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 px-2 py-1 text-sm"
                             prop:value=move || {
                               selected_ingredients.get().get(idx).map(|i| i.amount_grams).unwrap_or(amount)
                             }
@@ -600,12 +600,12 @@ fn IngredientSelector(
                               }
                             }
                           />
-                          <span class="text-sm text-slate-600">"g"</span>
+                          <span class="text-sm text-slate-600 dark:text-slate-400">"g"</span>
                         </div>
                       </Show>
                       <button
                         type="button"
-                        class="ml-auto text-red-600 hover:text-red-800"
+                        class="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         on:click=move |_| remove_ingredient(idx)
                       >
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -655,7 +655,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
 
     view! {
       <div class="space-y-2">
-        <label class="block text-sm font-medium text-slate-700">"Instructions"</label>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">"Instructions"</label>
         {move || {
           instructions
             .get()
@@ -665,16 +665,16 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
               let inst_value = inst.clone();
               view! {
                 <div class="flex items-start gap-2">
-                  <span class="mt-2 text-sm font-medium text-slate-500 w-6">{idx + 1}"."</span>
+                  <span class="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 w-6">{idx + 1}"."</span>
                   <textarea
-                    class="flex-1 rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="flex-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     rows="2"
                     prop:value=inst_value
                     on:input=move |ev| update_instruction(idx, event_target_value(&ev))
                   />
                   <button
                     type="button"
-                    class="mt-1 text-red-600 hover:text-red-800"
+                    class="mt-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     on:click=move |_| remove_instruction(idx)
                   >
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -688,7 +688,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
         }}
         <button
           type="button"
-          class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+          class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           on:click=add_instruction
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -832,8 +832,8 @@ fn RecipeModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 mb-1";
+    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+    let label_class = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
 
     view! {
       <Show when=move || show.get()>
@@ -850,12 +850,15 @@ fn RecipeModal(
             }
           }
         >
-          <div class="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl mx-4 my-auto">
+          <div class="w-full max-w-3xl rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl mx-4 my-auto">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-bold text-slate-900">
+              <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
                 {move || if editing.get().is_some() { "Edit Recipe" } else { "New Recipe" }}
               </h2>
-              <button class="text-slate-500 hover:text-slate-700" on:click=move |_| close()>
+              <button
+                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                on:click=move |_| close()
+              >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -863,7 +866,7 @@ fn RecipeModal(
             </div>
 
             <Show when=move || error.get().is_some()>
-              <div class="mb-4 rounded bg-red-100 px-4 py-2 text-sm text-red-700">
+              <div class="mb-4 rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 text-sm text-red-700 dark:text-red-400">
                 {move || error.get().unwrap_or_default()}
               </div>
             </Show>
@@ -926,8 +929,8 @@ fn RecipeModal(
               </div>
 
               // Ingredients section
-              <div class="border-t border-slate-200 pt-4">
-                <h3 class="text-lg font-semibold text-slate-800 mb-3">"Ingredients"</h3>
+              <div class="border-t border-slate-200 dark:border-slate-600 pt-4">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">"Ingredients"</h3>
                 <IngredientSelector
                   available_ingredients=available_ingredients
                   selected_ingredients=selected_ingredients
@@ -935,35 +938,45 @@ fn RecipeModal(
               </div>
 
               // Instructions section
-              <div class="border-t border-slate-200 pt-4">
+              <div class="border-t border-slate-200 dark:border-slate-600 pt-4">
                 <InstructionsEditor instructions=instructions />
               </div>
 
               // Nutrition preview
               <Show when=move || !selected_ingredients.get().is_empty()>
-                <div class="border-t border-slate-200 pt-4">
-                  <h3 class="text-lg font-semibold text-slate-800 mb-2">"Nutrition Preview (per serving)"</h3>
+                <div class="border-t border-slate-200 dark:border-slate-600 pt-4">
+                  <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                    "Nutrition Preview (per serving)"
+                  </h3>
                   {move || {
                     let ings = selected_ingredients.get();
                     let servings_count = servings.get().parse::<i32>().unwrap_or(1).max(1);
                     let nutrition = RecipeNutrition::from_ingredients(&ings).per_serving(servings_count);
                     view! {
                       <div class="grid grid-cols-4 gap-2 text-sm">
-                        <div class="bg-slate-50 rounded p-2 text-center">
-                          <div class="font-semibold text-slate-900">{format!("{:.0}", nutrition.calories)}</div>
-                          <div class="text-slate-600">"kcal"</div>
+                        <div class="bg-slate-50 dark:bg-slate-700 rounded p-2 text-center">
+                          <div class="font-semibold text-slate-900 dark:text-slate-100">
+                            {format!("{:.0}", nutrition.calories)}
+                          </div>
+                          <div class="text-slate-600 dark:text-slate-400">"kcal"</div>
                         </div>
-                        <div class="bg-slate-50 rounded p-2 text-center">
-                          <div class="font-semibold text-slate-900">{format!("{:.1}g", nutrition.protein)}</div>
-                          <div class="text-slate-600">"protein"</div>
+                        <div class="bg-slate-50 dark:bg-slate-700 rounded p-2 text-center">
+                          <div class="font-semibold text-slate-900 dark:text-slate-100">
+                            {format!("{:.1}g", nutrition.protein)}
+                          </div>
+                          <div class="text-slate-600 dark:text-slate-400">"protein"</div>
                         </div>
-                        <div class="bg-slate-50 rounded p-2 text-center">
-                          <div class="font-semibold text-slate-900">{format!("{:.1}g", nutrition.carbs)}</div>
-                          <div class="text-slate-600">"carbs"</div>
+                        <div class="bg-slate-50 dark:bg-slate-700 rounded p-2 text-center">
+                          <div class="font-semibold text-slate-900 dark:text-slate-100">
+                            {format!("{:.1}g", nutrition.carbs)}
+                          </div>
+                          <div class="text-slate-600 dark:text-slate-400">"carbs"</div>
                         </div>
-                        <div class="bg-slate-50 rounded p-2 text-center">
-                          <div class="font-semibold text-slate-900">{format!("{:.1}g", nutrition.fat)}</div>
-                          <div class="text-slate-600">"fat"</div>
+                        <div class="bg-slate-50 dark:bg-slate-700 rounded p-2 text-center">
+                          <div class="font-semibold text-slate-900 dark:text-slate-100">
+                            {format!("{:.1}g", nutrition.fat)}
+                          </div>
+                          <div class="text-slate-600 dark:text-slate-400">"fat"</div>
                         </div>
                       </div>
                     }
@@ -972,7 +985,7 @@ fn RecipeModal(
               </Show>
             </div>
 
-            <div class="mt-6 flex justify-between gap-3 border-t border-slate-200 pt-4">
+            <div class="mt-6 flex justify-between gap-3 border-t border-slate-200 dark:border-slate-600 pt-4">
               <div>
                 <Show when=move || editing.get().and_then(|r| r.id).is_some()>
                   <Show
@@ -980,7 +993,7 @@ fn RecipeModal(
                     fallback=move || {
                       view! {
                         <button
-                          class="rounded bg-red-100 px-4 py-2 font-medium text-red-700 hover:bg-red-200"
+                          class="rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 font-medium text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
                           on:click=move |_| show_delete_confirm.set(true)
                         >
                           "Delete"
@@ -989,7 +1002,7 @@ fn RecipeModal(
                     }
                   >
                     <div class="flex items-center gap-2">
-                      <span class="text-sm text-red-700">"Are you sure?"</span>
+                      <span class="text-sm text-red-700 dark:text-red-400">"Are you sure?"</span>
                       <button
                         class="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"
                         on:click=move |_| trigger_delete.set(true)
@@ -997,7 +1010,7 @@ fn RecipeModal(
                         "Yes, delete"
                       </button>
                       <button
-                        class="rounded bg-slate-200 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-300"
+                        class="rounded bg-slate-200 dark:bg-slate-600 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
                         on:click=move |_| show_delete_confirm.set(false)
                       >
                         "Cancel"
@@ -1008,13 +1021,13 @@ fn RecipeModal(
               </div>
               <div class="flex gap-3">
                 <button
-                  class="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300"
+                  class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
                   on:click=move |_| close()
                 >
                   "Cancel"
                 </button>
                 <button
-                  class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                  class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
                   disabled=move || saving.get()
                   on:click={
                     let handle_save = handle_save.clone();
