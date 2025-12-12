@@ -30,6 +30,11 @@ database_name = "food-lemmih-com-ingredients"
 database_id = "779425b4-cc96-4154-a422-bd45165d3bd1"
 migrations_dir = "migrations"
 
+# R2 bucket for food log images
+[[r2_buckets]]
+binding = "FOOD_IMAGES"
+bucket_name = "food-lemmih-com-images"
+
 [env.e2e]
 main = "result/worker/worker.js"
 
@@ -49,6 +54,11 @@ binding = "INGREDIENTS_DB"
 database_name = "food-lemmih-com-ingredients-e2e"
 database_id = "e2e-ingredients-db"
 migrations_dir = "migrations"
+
+# R2 bucket for e2e tests (local)
+[[env.e2e.r2_buckets]]
+binding = "FOOD_IMAGES"
+bucket_name = "food-lemmih-com-images-e2e"
 
 # For local dev/e2e, ADMIN_PIN can be set via vars
 [env.e2e.vars]
@@ -75,3 +85,8 @@ binding = "INGREDIENTS_DB"
 database_name = "food-lemmih-com-ingredients"
 database_id = "779425b4-cc96-4154-a422-bd45165d3bd1"
 migrations_dir = "migrations"
+
+# R2 bucket for preview deployments (same as production)
+[[env.preview.r2_buckets]]
+binding = "FOOD_IMAGES"
+bucket_name = "food-lemmih-com-images"
