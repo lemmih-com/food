@@ -2,6 +2,7 @@
 
 pub mod auth;
 pub mod cache;
+pub mod food_log;
 pub mod ingredients;
 pub mod pages;
 pub mod recipes;
@@ -36,11 +37,22 @@ pub use ingredients::{
 // Re-export recipe types for worker registration
 pub use recipes::{CreateRecipe, DeleteRecipe, GetRecipes, Recipe, UpdateRecipe};
 
+// Re-export food log types for worker registration
+#[cfg(feature = "ssr")]
+pub use food_log::SendR2Bucket;
+pub use food_log::{
+    CreateFoodLog, DeleteFoodImage, DeleteFoodLog, FoodLog, GetFoodImage, GetFoodLogs,
+    UpdateFoodLog, UploadFoodImage,
+};
+
 use auth::PinModal;
+use food_log::FoodLogs;
 use ingredients::Ingredients;
-use pages::{DarkMode, Home, Navigation};
+use pages::{DarkMode, Navigation};
 use recipes::Recipes;
 use settings::Settings;
+
+// Remove the old placeholder Home component since FoodLogs replaces it
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -62,7 +74,7 @@ pub fn App() -> impl IntoView {
         <PinModal />
         <main class="min-h-screen bg-slate-100 px-4 dark:bg-slate-900 transition-colors">
           <Routes fallback=|| "Not found">
-            <Route path=path!("/") view=Home />
+            <Route path=path!("/") view=FoodLogs />
             <Route path=path!("/ingredients") view=Ingredients />
             <Route path=path!("/recipes") view=Recipes />
             <Route path=path!("/settings") view=Settings />

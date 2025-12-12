@@ -12,6 +12,9 @@ pub const INGREDIENTS_CACHE_KEY: &str = "food_ingredients_cache";
 /// Cache key for recipes list
 pub const RECIPES_CACHE_KEY: &str = "food_recipes_cache";
 
+/// Cache key for food logs list
+pub const FOOD_LOGS_CACHE_KEY: &str = "food_logs_cache";
+
 /// Store data in localStorage
 pub fn set_cache<T: Serialize>(key: &str, data: &T) {
     if let Err(e) = LocalStorage::set(key, data) {
