@@ -1,7 +1,13 @@
 #![allow(non_snake_case)]
 #![recursion_limit = "512"]
 
-use axum::{routing::post, Router};
+use axum::{
+    extract::Path,
+    http::{header, StatusCode},
+    response::IntoResponse,
+    routing::{get, post},
+    Router,
+};
 use food_lemmih_com_app::{shell, App, AuthState, SendD1Database, SendKvStore, SendR2Bucket};
 use leptos::prelude::provide_context;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
@@ -34,6 +40,60 @@ fn register() {
     server_fn::axum::register_explicit::<food_lemmih_com_app::UploadFoodImage>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::GetFoodImage>();
     server_fn::axum::register_explicit::<food_lemmih_com_app::DeleteFoodImage>();
+}
+
+/// Handler to serve images from R2 bucket
+async fn serve_food_image(
+    Path(key): Path<String>,
+    axum::Extension(bucket): axum::Extension<SendR2Bucket>,
+) -> impl IntoResponse {
+    use send_wrapper::SendWrapper;
+
+    // Fetch the image from R2 - do all R2 work in a single SendWrapper block
+    let result: std::result::Result<Option<(Vec<u8>, String)>, worker::Error> =
+        SendWrapper::new(async {
+            let object = match bucket.inner().get(&key).execute().await? {
+                Some(obj) => obj,
+                None => return Ok(None),
+            };
+
+            let content_type = object
+                .http_metadata()
+                .content_type
+                .unwrap_or_else(|| "image/jpeg".to_string());
+
+            let body = match object.body() {
+                Some(b) => b,
+                None => return Ok(None),
+            };
+
+            let bytes = body.bytes().await?;
+            Ok(Some((bytes, content_type)))
+        })
+        .await;
+
+    match result {
+        Ok(Some((bytes, content_type))) => (
+            StatusCode::OK,
+            [
+                (header::CONTENT_TYPE, content_type),
+                (
+                    header::CACHE_CONTROL,
+                    "public, max-age=31536000".to_string(),
+                ),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Ok(None) => {
+            log::warn!("Image not found: {}", key);
+            StatusCode::NOT_FOUND.into_response()
+        }
+        Err(e) => {
+            log::error!("R2 error fetching image {}: {:?}", key, e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
 }
 
 fn router(env: Env) -> Router<()> {
@@ -87,6 +147,7 @@ fn router(env: Env) -> Router<()> {
 
     // Build the leptos routes with context provider for server functions
     Router::new()
+        .route("/api/food-image/{key}", get(serve_food_image))
         .route(
             "/api/{*fn_name}",
             post({
@@ -98,6 +159,7 @@ fn router(env: Env) -> Router<()> {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
         })
+        .layer(axum::Extension(r2_bucket))
         .with_state(leptos_options)
 }
 

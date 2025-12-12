@@ -552,6 +552,7 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "log",
+ "send_wrapper",
  "server_fn",
  "tower-service",
  "wasm-bindgen",
