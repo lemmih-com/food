@@ -106,7 +106,8 @@ pub fn DarkModeToggle() -> impl IntoView {
     view! {
       <button
         type="button"
-        class="relative h-8 w-8 rounded-full p-1.5 text-slate-200 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-white transition-colors"
+        class="relative h-11 w-11 rounded-full p-1.5 text-slate-200 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-white transition-colors select-none"
+        style="touch-action: manipulation;"
         attr:aria-label=move || if dark_mode.is_dark.get() { "Switch to light mode" } else { "Switch to dark mode" }
         on:click=move |_| dark_mode.toggle()
       >
@@ -200,7 +201,8 @@ pub fn Navigation() -> impl IntoView {
 
               <button
                 type="button"
-                class="inline-flex items-center justify-center rounded-md p-2 text-slate-200 hover:bg-slate-700 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-white sm:hidden"
+                class="inline-flex items-center justify-center rounded-md p-2 min-h-11 min-w-11 text-slate-200 hover:bg-slate-700 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-white sm:hidden select-none"
+                style="touch-action: manipulation;"
                 attr:aria-controls="primary-navigation"
                 attr:aria-expanded=move || menu_open.get().to_string()
                 on:click=move |_| set_menu_open.update(|open| *open = !*open)

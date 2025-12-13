@@ -516,7 +516,8 @@ fn LabelBadge(label: String, on_remove: Option<Box<dyn Fn() + Send + Sync>>) -> 
             view! {
               <button
                 type="button"
-                class="ml-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                class="ml-0.5 h-11 w-11 flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| remove()
               >
                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -748,7 +749,8 @@ fn IngredientModal(
                 {move || if editing.get().is_some() { "Edit Ingredient" } else { "New Ingredient" }}
               </h2>
               <button
-                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                class="h-11 w-11 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -795,7 +797,8 @@ fn IngredientModal(
                   />
                   <button
                     type="button"
-                    class="px-3 py-2 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
+                    class="px-3 py-2 min-h-11 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 select-none"
+                    style="touch-action: manipulation;"
                     on:click=move |_| add_label()
                   >
                     "Add"
@@ -934,13 +937,15 @@ fn IngredientModal(
 
             <div class="mt-6 flex justify-end gap-3">
               <button
-                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 min-h-11 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 "Cancel"
               </button>
               <button
-                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                class="rounded bg-blue-600 px-4 py-2 min-h-11 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 select-none"
+                style="touch-action: manipulation;"
                 disabled=move || saving.get()
                 on:click={
                   let handle_save = handle_save.clone();
@@ -1146,7 +1151,8 @@ fn BulkImportModal(
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">"Bulk Import Ingredients"</h2>
               <button
-                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                class="h-11 w-11 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1315,13 +1321,15 @@ fn BulkImportModal(
 
             <div class="mt-6 flex justify-end gap-3">
               <button
-                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 min-h-11 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 "Cancel"
               </button>
               <button
-                class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                class="rounded bg-blue-600 px-4 py-2 min-h-11 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 select-none"
+                style="touch-action: manipulation;"
                 disabled=move || importing.get() || get_ingredients_to_import().is_empty()
                 on:click={
                   let handle_import = handle_import.clone();
@@ -1635,7 +1643,8 @@ fn IngredientTable(
                     <Show when=move || auth.is_authenticated.get()>
                       <td class=cell_class>
                         <button
-                          class="text-blue-600 hover:text-blue-800"
+                          class="h-11 w-11 flex items-center justify-center text-blue-600 hover:text-blue-800 select-none"
+                          style="touch-action: manipulation;"
                           title="Edit"
                           on:click={
                             let ing_for_edit = ing_for_edit.clone();
@@ -1737,7 +1746,8 @@ pub fn Ingredients() -> impl IntoView {
           <div class="flex items-center gap-3 flex-wrap">
             <Show when=move || auth.is_authenticated.get()>
               <button
-                class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 min-h-11 text-sm font-medium text-white hover:bg-green-700 select-none"
+                style="touch-action: manipulation;"
                 on:click=handle_new
               >
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1746,7 +1756,8 @@ pub fn Ingredients() -> impl IntoView {
                 "New Ingredient"
               </button>
               <button
-                class="flex items-center gap-2 rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                class="flex items-center gap-2 rounded bg-purple-600 px-4 py-2 min-h-11 text-sm font-medium text-white hover:bg-purple-700 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| show_bulk_import.set(true)
               >
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1764,7 +1775,7 @@ pub fn Ingredients() -> impl IntoView {
               <span class="text-sm font-medium text-slate-700 dark:text-slate-300">"View nutrients:"</span>
               <button
                 class=move || {
-                  let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                  let base = "px-3 py-1 min-h-11 text-sm font-medium rounded transition-colors select-none";
                   if view_mode.get() == NutrientView::Per100g {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
@@ -1774,13 +1785,14 @@ pub fn Ingredients() -> impl IntoView {
                     )
                   }
                 }
+                style="touch-action: manipulation;"
                 on:click=move |_| set_view_mode.set(NutrientView::Per100g)
               >
                 "per 100g"
               </button>
               <button
                 class=move || {
-                  let base = "px-3 py-1 text-sm font-medium rounded transition-colors";
+                  let base = "px-3 py-1 min-h-11 text-sm font-medium rounded transition-colors select-none";
                   if view_mode.get() == NutrientView::Per100kcal {
                     format!("{} bg-blue-600 text-white", base)
                   } else {
@@ -1790,6 +1802,7 @@ pub fn Ingredients() -> impl IntoView {
                     )
                   }
                 }
+                style="touch-action: manipulation;"
                 on:click=move |_| set_view_mode.set(NutrientView::Per100kcal)
               >
                 "per 100kcal"

@@ -18,6 +18,9 @@ use crate::recipes::{get_recipes, Recipe};
 // ============================================================================
 
 /// Crop coordinates for an image (stored as percentages 0-100)
+/// The crop represents which portion of the original image to show.
+/// x, y are the top-left corner position as percentages.
+/// width, height are the size of the crop area as percentages.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct ImageCrop {
     pub x: f32,
@@ -26,8 +29,25 @@ pub struct ImageCrop {
     pub height: f32,
 }
 
+/// The aspect ratio used for displaying food log images (width/height)
+/// This matches the card display which uses a wide rectangle
+pub const CROP_ASPECT_RATIO: f32 = 2.5; // width is 2.5x height (roughly matching h-48 on typical card width)
+
 impl ImageCrop {
     pub fn new() -> Self {
+        // Default crop: centered, using the full width with appropriate height for aspect ratio
+        // For a 2.5:1 aspect ratio on a square-ish image, height would be 40% of width
+        // Start with a reasonably sized crop box
+        Self {
+            x: 10.0,
+            y: 20.0,
+            width: 80.0,
+            height: 32.0, // 80 / 2.5 = 32
+        }
+    }
+
+    /// Create a crop that covers the full image (for backwards compatibility)
+    pub fn full() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
@@ -430,13 +450,14 @@ fn StarRating(rating: RwSignal<Option<i32>>, #[prop(optional)] readonly: bool) -
               <button
                 type="button"
                 class=move || {
-                  let base = "w-6 h-6 transition-colors";
+                  let base = "w-11 h-11 transition-colors select-none";
                   if readonly {
                     format!("{} cursor-default", base)
                   } else {
                     format!("{} cursor-pointer hover:scale-110", base)
                   }
                 }
+                style="touch-action: manipulation;"
                 disabled=readonly
                 on:click=move |_| {
                   if !readonly {
@@ -471,7 +492,7 @@ fn StarRating(rating: RwSignal<Option<i32>>, #[prop(optional)] readonly: bool) -
     }
 }
 
-/// Image cropper component
+/// Image cropper component with fixed aspect ratio crop box
 #[component]
 fn ImageCropper(
     image_data: ReadSignal<Option<String>>,
@@ -520,41 +541,91 @@ fn ImageCropper(
 
     view! {
       <Show when=move || image_data.get().is_some()>
-        <div
-          node_ref=container_ref
-          class="relative w-full aspect-square bg-slate-200 dark:bg-slate-700 rounded overflow-hidden select-none"
-          on:mousemove=on_mouse_move
-          on:mouseup=on_mouse_up
-          on:mouseleave=on_mouse_up
-        >
-          <img src=move || image_data.get().unwrap_or_default() class="w-full h-full object-cover" draggable="false" />
+        <div class="space-y-2">
+          <p class="text-xs text-slate-500 dark:text-slate-400">"Drag the box to select the visible area"</p>
           <div
-            class="absolute inset-0 bg-black/50 pointer-events-none"
-            style=move || {
-              let c = crop.get();
-              format!(
-                "clip-path: polygon(0% 0%, 100% 0%, 100% 100%, {}% 100%, {}% {}%, {}% {}%, {}% {}%, {}% {}%, {}% 100%, 0% 100%)",
-                c.x,
-                c.x,
-                c.y,
-                c.x + c.width,
-                c.y,
-                c.x + c.width,
-                c.y + c.height,
-                c.x,
-                c.y + c.height,
-                c.x,
-              )
-            }
-          />
-          <div
-            class="absolute border-2 border-white cursor-move"
-            style=move || {
-              let c = crop.get();
-              format!("left: {}%; top: {}%; width: {}%; height: {}%;", c.x, c.y, c.width, c.height)
-            }
-            on:mousedown=on_mouse_down
-          />
+            node_ref=container_ref
+            class="relative w-full bg-slate-900 rounded overflow-hidden select-none"
+            style="aspect-ratio: 4/3;"
+            on:mousemove=on_mouse_move
+            on:mouseup=on_mouse_up
+            on:mouseleave=on_mouse_up
+          >
+            // The image fills the container
+            <img
+              src=move || image_data.get().unwrap_or_default()
+              class="absolute inset-0 w-full h-full object-contain"
+              draggable="false"
+            />
+            // Dark overlay with cutout for crop area
+            <div
+              class="absolute inset-0 pointer-events-none"
+              style=move || {
+                let c = crop.get();
+                format!(
+                  "background: linear-gradient(to right, rgba(0,0,0,0.6) {}%, transparent {}%, transparent {}%, rgba(0,0,0,0.6) {}%), linear-gradient(to bottom, rgba(0,0,0,0.6) {}%, transparent {}%, transparent {}%, rgba(0,0,0,0.6) {}%);",
+                  c.x,
+                  c.x,
+                  c.x + c.width,
+                  c.x + c.width,
+                  c.y,
+                  c.y,
+                  c.y + c.height,
+                  c.y + c.height,
+                )
+              }
+            />
+            // Top dark band
+            <div
+              class="absolute left-0 right-0 top-0 bg-black/60 pointer-events-none"
+              style=move || format!("height: {}%;", crop.get().y)
+            />
+            // Bottom dark band
+            <div
+              class="absolute left-0 right-0 bottom-0 bg-black/60 pointer-events-none"
+              style=move || {
+                let c = crop.get();
+                format!("height: {}%;", 100.0 - c.y - c.height)
+              }
+            />
+            // Left dark band (between top and bottom bands)
+            <div
+              class="absolute left-0 bg-black/60 pointer-events-none"
+              style=move || {
+                let c = crop.get();
+                format!("top: {}%; height: {}%; width: {}%;", c.y, c.height, c.x)
+              }
+            />
+            // Right dark band (between top and bottom bands)
+            <div
+              class="absolute right-0 bg-black/60 pointer-events-none"
+              style=move || {
+                let c = crop.get();
+                format!("top: {}%; height: {}%; width: {}%;", c.y, c.height, 100.0 - c.x - c.width)
+              }
+            />
+            // Crop box border (draggable)
+            <div
+              class="absolute border-2 border-white shadow-lg cursor-move"
+              style=move || {
+                let c = crop.get();
+                format!(
+                  "left: {}%; top: {}%; width: {}%; height: {}%; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);",
+                  c.x,
+                  c.y,
+                  c.width,
+                  c.height,
+                )
+              }
+              on:mousedown=on_mouse_down
+            >
+              // Corner indicators
+              <div class="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-sm" />
+              <div class="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-sm" />
+              <div class="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-sm" />
+              <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-sm" />
+            </div>
+          </div>
         </div>
       </Show>
     }
@@ -782,7 +853,8 @@ fn FoodLogModal(
                 {move || if editing.get().is_some() { "Edit Food Log Entry" } else { "New Food Log Entry" }}
               </h2>
               <button
-                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                class="h-11 w-11 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -906,7 +978,8 @@ fn FoodLogModal(
                     fallback=move || {
                       view! {
                         <button
-                          class="rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 font-medium text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                          class="rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 min-h-11 font-medium text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 select-none"
+                          style="touch-action: manipulation;"
                           on:click=move |_| show_delete_confirm.set(true)
                         >
                           "Delete"
@@ -917,13 +990,15 @@ fn FoodLogModal(
                     <div class="flex items-center gap-2">
                       <span class="text-sm text-red-700 dark:text-red-400">"Are you sure?"</span>
                       <button
-                        class="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"
+                        class="rounded bg-red-600 px-3 py-1 min-h-11 text-sm font-medium text-white hover:bg-red-700 select-none"
+                        style="touch-action: manipulation;"
                         on:click=move |_| trigger_delete.set(true)
                       >
                         "Yes, delete"
                       </button>
                       <button
-                        class="rounded bg-slate-200 dark:bg-slate-600 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                        class="rounded bg-slate-200 dark:bg-slate-600 px-3 py-1 min-h-11 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                        style="touch-action: manipulation;"
                         on:click=move |_| show_delete_confirm.set(false)
                       >
                         "Cancel"
@@ -934,13 +1009,15 @@ fn FoodLogModal(
               </div>
               <div class="flex gap-3">
                 <button
-                  class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                  class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 min-h-11 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                  style="touch-action: manipulation;"
                   on:click=move |_| close()
                 >
                   "Cancel"
                 </button>
                 <button
-                  class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                  class="rounded bg-blue-600 px-4 py-2 min-h-11 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 select-none"
+                  style="touch-action: manipulation;"
                   disabled=move || saving.get()
                   on:click={
                     let handle_save = handle_save.clone();
@@ -983,13 +1060,13 @@ fn FoodLogCard(
       <div class="rounded-lg bg-white dark:bg-slate-800 shadow-md overflow-hidden">
         <Show when=move || has_image>
           <div
-            class="h-48 bg-slate-200 dark:bg-slate-700"
+            class="h-48 bg-slate-200 dark:bg-slate-700 bg-no-repeat"
             style=format!(
-              "background-image: url('{}'); background-size: {}%; background-position: {}% {}%;",
+              "background-image: url('{}'); background-size: {}% auto; background-position: {}% {}%;",
               image_url,
-              (100.0 / crop_width.min(crop_height)) * 100.0,
-              (crop_x / (100.0 - crop_width).max(0.01)) * 100.0,
-              (crop_y / (100.0 - crop_height).max(0.01)) * 100.0,
+              (100.0 / crop_width) * 100.0,
+              if (100.0 - crop_width).abs() < 0.01 { 0.0 } else { (crop_x / (100.0 - crop_width)) * 100.0 },
+              if (100.0 - crop_height).abs() < 0.01 { 0.0 } else { (crop_y / (100.0 - crop_height)) * 100.0 },
             )
           />
         </Show>
@@ -1125,7 +1202,8 @@ pub fn FoodLogs() -> impl IntoView {
           <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">"Food Log"</h2>
           <Show when=move || auth.is_authenticated.get()>
             <button
-              class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 min-h-11 text-sm font-medium text-white hover:bg-green-700 select-none"
+              style="touch-action: manipulation;"
               on:click=handle_new
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

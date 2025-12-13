@@ -605,7 +605,8 @@ fn IngredientSelector(
                       </Show>
                       <button
                         type="button"
-                        class="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        class="ml-auto h-11 w-11 flex items-center justify-center text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 select-none"
+                        style="touch-action: manipulation;"
                         on:click=move |_| remove_ingredient(idx)
                       >
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -674,7 +675,8 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
                   />
                   <button
                     type="button"
-                    class="mt-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    class="mt-1 h-11 w-11 flex items-center justify-center text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 select-none"
+                    style="touch-action: manipulation;"
                     on:click=move |_| remove_instruction(idx)
                   >
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -688,7 +690,8 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
         }}
         <button
           type="button"
-          class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          class="flex items-center gap-1 min-h-11 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 select-none"
+          style="touch-action: manipulation;"
           on:click=add_instruction
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -856,7 +859,8 @@ fn RecipeModal(
                 {move || if editing.get().is_some() { "Edit Recipe" } else { "New Recipe" }}
               </h2>
               <button
-                class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                class="h-11 w-11 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+                style="touch-action: manipulation;"
                 on:click=move |_| close()
               >
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -993,7 +997,8 @@ fn RecipeModal(
                     fallback=move || {
                       view! {
                         <button
-                          class="rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 font-medium text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                          class="rounded bg-red-100 dark:bg-red-900/30 px-4 py-2 min-h-11 font-medium text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 select-none"
+                          style="touch-action: manipulation;"
                           on:click=move |_| show_delete_confirm.set(true)
                         >
                           "Delete"
@@ -1004,13 +1009,15 @@ fn RecipeModal(
                     <div class="flex items-center gap-2">
                       <span class="text-sm text-red-700 dark:text-red-400">"Are you sure?"</span>
                       <button
-                        class="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"
+                        class="rounded bg-red-600 px-3 py-1 min-h-11 text-sm font-medium text-white hover:bg-red-700 select-none"
+                        style="touch-action: manipulation;"
                         on:click=move |_| trigger_delete.set(true)
                       >
                         "Yes, delete"
                       </button>
                       <button
-                        class="rounded bg-slate-200 dark:bg-slate-600 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                        class="rounded bg-slate-200 dark:bg-slate-600 px-3 py-1 min-h-11 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                        style="touch-action: manipulation;"
                         on:click=move |_| show_delete_confirm.set(false)
                       >
                         "Cancel"
@@ -1021,13 +1028,15 @@ fn RecipeModal(
               </div>
               <div class="flex gap-3">
                 <button
-                  class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+                  class="rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 min-h-11 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+                  style="touch-action: manipulation;"
                   on:click=move |_| close()
                 >
                   "Cancel"
                 </button>
                 <button
-                  class="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+                  class="rounded bg-blue-600 px-4 py-2 min-h-11 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 select-none"
+                  style="touch-action: manipulation;"
                   disabled=move || saving.get()
                   on:click={
                     let handle_save = handle_save.clone();
@@ -1229,7 +1238,8 @@ pub fn Recipes() -> impl IntoView {
           <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">"Recipes"</h2>
           <Show when=move || auth.is_authenticated.get()>
             <button
-              class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 min-h-11 text-sm font-medium text-white hover:bg-green-700 select-none"
+              style="touch-action: manipulation;"
               on:click=handle_new
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

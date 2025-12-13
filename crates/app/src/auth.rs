@@ -421,7 +421,8 @@ fn PinModalContent(
           <div class="mb-4 flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">"Admin Access"</h2>
             <button
-              class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              class="h-11 w-11 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 select-none"
+              style="touch-action: manipulation;"
               on:click={
                 let do_close = do_close.clone();
                 move |_| do_close()
@@ -486,7 +487,8 @@ fn PinModalContent(
 
           <div class="flex gap-3">
             <button
-              class="flex-1 rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500"
+              class="flex-1 rounded bg-slate-200 dark:bg-slate-600 px-4 py-2 min-h-11 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 select-none"
+              style="touch-action: manipulation;"
               on:click={
                 let do_close = do_close.clone();
                 move |_| do_close()
@@ -495,7 +497,8 @@ fn PinModalContent(
               "Cancel"
             </button>
             <button
-              class="flex-1 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800"
+              class="flex-1 rounded bg-blue-600 px-4 py-2 min-h-11 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 select-none"
+              style="touch-action: manipulation;"
               on:click={
                 let do_submit = do_submit.clone();
                 move |_| do_submit()
@@ -543,7 +546,8 @@ fn UnlockButton() -> impl IntoView {
 
     view! {
       <button
-        class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
+        class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 min-h-11 text-sm font-medium hover:bg-slate-600 select-none"
+        style="touch-action: manipulation;"
         on:click=move |_| auth.open_modal()
       >
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -566,7 +570,8 @@ fn LogoutButton() -> impl IntoView {
 
     view! {
       <button
-        class="flex items-center gap-2 rounded bg-green-700 px-3 py-2 text-sm font-medium hover:bg-green-600"
+        class="flex items-center gap-2 rounded bg-green-700 px-3 py-2 min-h-11 text-sm font-medium hover:bg-green-600 select-none"
+        style="touch-action: manipulation;"
         on:click=move |_| {
           let auth = auth.clone();
           wasm_bindgen_futures::spawn_local(async move {

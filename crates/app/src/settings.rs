@@ -170,25 +170,29 @@ fn PresetButtons(
         <h3 class="mb-4 text-xl font-semibold text-slate-900 dark:text-slate-100">"Load Preset"</h3>
         <div class="flex flex-wrap gap-3">
           <button
-            class="rounded bg-slate-600 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+            class="rounded bg-slate-600 px-4 py-2 min-h-11 text-sm font-semibold text-white hover:bg-slate-700 select-none"
+            style="touch-action: manipulation;"
             on:click=move |_| load_preset("default")
           >
             "Default"
           </button>
           <button
-            class="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            class="rounded bg-emerald-600 px-4 py-2 min-h-11 text-sm font-semibold text-white hover:bg-emerald-700 select-none"
+            style="touch-action: manipulation;"
             on:click=move |_| load_preset("usda")
           >
             "USDA Dietary Guidelines"
           </button>
           <button
-            class="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            class="rounded bg-red-600 px-4 py-2 min-h-11 text-sm font-semibold text-white hover:bg-red-700 select-none"
+            style="touch-action: manipulation;"
             on:click=move |_| load_preset("aha")
           >
             "AHA Guidelines"
           </button>
           <button
-            class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            class="rounded bg-blue-600 px-4 py-2 min-h-11 text-sm font-semibold text-white hover:bg-blue-700 select-none"
+            style="touch-action: manipulation;"
             on:click=move |_| load_preset("nhs")
           >
             "NHS Guidelines"
@@ -329,10 +333,11 @@ fn MacroInputRow(
     view! {
       <div class="flex items-center gap-2">
         <button
-          class="flex h-7 w-7 items-center justify-center rounded border text-sm hover:bg-slate-100"
+          class="flex h-11 w-11 items-center justify-center rounded border text-sm hover:bg-slate-100 select-none"
           class=(border_color_class, move || locked_macro.get() == Some(macro_type))
           class=(bg_color_class, move || locked_macro.get() == Some(macro_type))
           class=("border-slate-300", move || locked_macro.get() != Some(macro_type))
+          style="touch-action: manipulation;"
           title=move || { if locked_macro.get() == Some(macro_type) { "Click to unlock" } else { "Click to lock" } }
           on:click=move |_| {
             if locked_macro.get() == Some(macro_type) {
