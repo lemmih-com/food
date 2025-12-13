@@ -19,7 +19,7 @@ echo "Creating result symlink to webapp..."
 ln -sfn "$WEBAPP_PATH" result
 
 # Setup cleanup trap to kill wrangler and geckodriver on exit
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317
 cleanup() {
   if [ -n "${WRANGLER_PID:-}" ]; then
     echo "Stopping wrangler and its child processes..."

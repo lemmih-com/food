@@ -403,6 +403,10 @@
           ${pkgs.leptosfmt}/bin/leptosfmt --config-file ${./leptosfmt.toml} --check ${./.}/crates
           touch $out
         '';
+        shellcheck = pkgs.runCommand "shellcheck" {} ''
+          ${pkgs.shellcheck}/bin/shellcheck ${./nix/run-e2e-tests.sh}
+          touch $out
+        '';
         cargoFmt = craneLib.cargoFmt {
           inherit src;
         };
