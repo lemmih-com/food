@@ -1175,36 +1175,21 @@ fn FoodLogCard(
     let notes = log.notes.clone();
     let has_notes = !notes.is_empty();
 
-    // Calculate scale factor - image should be scaled so crop area fills the container
-    let scale = 100.0 / crop_width.min(crop_height);
-    // Calculate position to center the crop area
-    let pos_x = if (100.0 - crop_width).abs() < 0.01 {
-        0.0
-    } else {
-        (crop_x / (100.0 - crop_width)) * 100.0
-    };
-    let pos_y = if (100.0 - crop_height).abs() < 0.01 {
-        0.0
-    } else {
-        (crop_y / (100.0 - crop_height)) * 100.0
-    };
+    // For displaying the cropped image, we use object-position
+    // The position tells CSS where in the image to focus
+    // crop_x=0, crop_width=80 means show left 80%, so position should be towards left
+    // crop_x=20, crop_width=80 means crop starts at 20%, so center of crop is at 20 + 40 = 60%
+    let center_x = crop_x + crop_width / 2.0;
+    let center_y = crop_y + crop_height / 2.0;
 
     view! {
       <div class="rounded-lg bg-white dark:bg-slate-800 shadow-md overflow-hidden">
         <Show when=move || has_image>
-          <div class="h-48 bg-slate-200 dark:bg-slate-700 overflow-hidden">
+          <div class="h-48 bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center">
             <img
               src=image_url.clone()
-              class="w-full h-full object-cover"
-              style=format!(
-                "transform: rotate({}deg) scale({}); transform-origin: {}% {}%; object-position: {}% {}%;",
-                rotation,
-                scale / 100.0,
-                50.0,
-                50.0,
-                pos_x,
-                pos_y,
-              )
+              class="min-w-full min-h-full object-cover"
+              style=format!("transform: rotate({}deg); object-position: {}% {}%;", rotation, center_x, center_y)
             />
           </div>
         </Show>
