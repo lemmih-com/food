@@ -28,7 +28,7 @@ tower = "0.5"
 tower-service = "0.3"
 wasm-bindgen = "0.2.106"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Document", "Request", "Window"] }
+web-sys = { version = "0.3", features = ["Document", "Element", "Request", "Window"] }
 worker = { version = "0.6.7", features = ["d1"] }
 tokio = { version = "1.38", default-features = false, features = [
   "macros",

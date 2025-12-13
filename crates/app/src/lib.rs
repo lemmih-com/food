@@ -72,6 +72,46 @@ pub fn App() -> impl IntoView {
     }
 }
 
+/// Inline script that detects hydration failures and shows a user-friendly error message.
+/// This helps diagnose mobile-specific WASM loading issues.
+const HYDRATION_ERROR_SCRIPT: &str = r#"
+(function() {
+  // Set a timeout to check if hydration completed
+  // WASM loading typically takes 2-5 seconds, so we wait 10 seconds to be safe
+  var HYDRATION_TIMEOUT_MS = 10000;
+  
+  window.__HYDRATION_COMPLETE__ = false;
+  
+  // Store the original hydrate function location for detection
+  var timeoutId = setTimeout(function() {
+    if (!window.__HYDRATION_COMPLETE__) {
+      console.error('[Hydration Error] WASM hydration did not complete within ' + HYDRATION_TIMEOUT_MS + 'ms');
+      
+      // Create and show error banner
+      var banner = document.createElement('div');
+      banner.id = 'hydration-error-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:12px 16px;text-align:center;z-index:9999;font-family:system-ui,sans-serif;font-size:14px;';
+      banner.innerHTML = '<strong>Interactive features failed to load.</strong> Try refreshing the page. If the problem persists, try a different browser. <button onclick="this.parentElement.remove()" style="margin-left:12px;background:white;color:#dc2626;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">Dismiss</button>';
+      
+      // Insert at the beginning of body
+      if (document.body) {
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+      
+      // Log additional debug info
+      console.error('[Hydration Debug] User Agent:', navigator.userAgent);
+      console.error('[Hydration Debug] WASM supported:', typeof WebAssembly !== 'undefined');
+      if (typeof WebAssembly !== 'undefined') {
+        console.error('[Hydration Debug] WASM streaming supported:', typeof WebAssembly.instantiateStreaming === 'function');
+      }
+    }
+  }, HYDRATION_TIMEOUT_MS);
+  
+  // Store timeout ID so it can be cleared on successful hydration
+  window.__HYDRATION_TIMEOUT_ID__ = timeoutId;
+})();
+"#;
+
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
       <!DOCTYPE html>
@@ -82,6 +122,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
           <link rel="stylesheet" href="/pkg/styles.css" />
           <AutoReload options=options.clone() />
           <HydrationScripts options />
+          // Hydration error detection script - runs early to set up timeout
+          <script inner_html=HYDRATION_ERROR_SCRIPT></script>
           <MetaTags />
           <title>"food.lemmih.com"</title>
         </head>
