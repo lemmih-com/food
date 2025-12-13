@@ -21,12 +21,21 @@ use crate::recipes::{get_recipes, Recipe};
 /// The crop represents which portion of the original image to show.
 /// x, y are the top-left corner position as percentages.
 /// width, height are the size of the crop area as percentages.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+/// rotation is in degrees (0, 90, 180, 270).
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ImageCrop {
     pub x: f32,
     pub y: f32,
     pub width: f32,
     pub height: f32,
+    #[serde(default)]
+    pub rotation: i32, // 0, 90, 180, or 270 degrees
+}
+
+impl Default for ImageCrop {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// The aspect ratio used for displaying food log images (width/height)
@@ -43,6 +52,7 @@ impl ImageCrop {
             y: 20.0,
             width: 80.0,
             height: 32.0, // 80 / 2.5 = 32
+            rotation: 0,
         }
     }
 
@@ -53,7 +63,52 @@ impl ImageCrop {
             y: 0.0,
             width: 100.0,
             height: 100.0,
+            rotation: 0,
         }
+    }
+
+    /// Rotate the crop by 90 degrees clockwise
+    pub fn rotate_cw(&mut self) {
+        self.rotation = (self.rotation + 90) % 360;
+    }
+
+    /// Rotate the crop by 90 degrees counter-clockwise
+    pub fn rotate_ccw(&mut self) {
+        self.rotation = (self.rotation + 270) % 360;
+    }
+
+    /// Zoom in (decrease crop area while maintaining aspect ratio)
+    pub fn zoom_in(&mut self) {
+        let new_width = (self.width * 0.9).max(20.0); // minimum 20% width
+        let new_height = new_width / CROP_ASPECT_RATIO;
+        // Adjust position to keep centered
+        let dx = (self.width - new_width) / 2.0;
+        let dy = (self.height - new_height) / 2.0;
+        self.x = (self.x + dx).clamp(0.0, 100.0 - new_width);
+        self.y = (self.y + dy).clamp(0.0, 100.0 - new_height);
+        self.width = new_width;
+        self.height = new_height;
+    }
+
+    /// Zoom out (increase crop area while maintaining aspect ratio)
+    pub fn zoom_out(&mut self) {
+        let new_width = (self.width * 1.1).min(100.0);
+        let new_height = (new_width / CROP_ASPECT_RATIO).min(100.0);
+        // Adjust width if height would exceed 100%
+        let new_width = if new_height >= 100.0 {
+            100.0 * CROP_ASPECT_RATIO
+        } else {
+            new_width
+        }
+        .min(100.0);
+        let new_height = new_width / CROP_ASPECT_RATIO;
+        // Adjust position to keep centered and within bounds
+        let dx = (self.width - new_width) / 2.0;
+        let dy = (self.height - new_height) / 2.0;
+        self.x = (self.x + dx).clamp(0.0, 100.0 - new_width);
+        self.y = (self.y + dy).clamp(0.0, 100.0 - new_height);
+        self.width = new_width;
+        self.height = new_height;
     }
 }
 
@@ -135,7 +190,7 @@ pub async fn get_food_logs() -> Result<Vec<FoodLog>, ServerFnError> {
     let logs = SendWrapper::new(async {
         let stmt = db.inner().prepare(
             "SELECT fl.id, fl.recipe_id, r.name as recipe_name, fl.image_key, fl.logged_at, 
-                    fl.rating, fl.notes, fl.crop_x, fl.crop_y, fl.crop_width, fl.crop_height
+                    fl.rating, fl.notes, fl.crop_x, fl.crop_y, fl.crop_width, fl.crop_height, fl.crop_rotation
              FROM food_logs fl
              LEFT JOIN recipes r ON fl.recipe_id = r.id
              ORDER BY fl.logged_at DESC",
@@ -178,6 +233,10 @@ pub async fn get_food_logs() -> Result<Vec<FoodLog>, ServerFnError> {
                         .get("crop_height")
                         .and_then(|v| v.as_f64())
                         .unwrap_or(100.0) as f32,
+                    rotation: row
+                        .get("crop_rotation")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0) as i32,
                 },
             })
             .collect();
@@ -214,8 +273,8 @@ pub async fn create_food_log(log: FoodLog) -> Result<FoodLog, ServerFnError> {
             .unwrap_or_else(|| "NULL".to_string());
 
         let sql = format!(
-            "INSERT INTO food_logs (recipe_id, image_key, logged_at, rating, notes, crop_x, crop_y, crop_width, crop_height) 
-             VALUES ({}, {}, '{}', {}, '{}', {}, {}, {}, {}) RETURNING id",
+            "INSERT INTO food_logs (recipe_id, image_key, logged_at, rating, notes, crop_x, crop_y, crop_width, crop_height, crop_rotation) 
+             VALUES ({}, {}, '{}', {}, '{}', {}, {}, {}, {}, {}) RETURNING id",
             recipe_id_sql,
             image_key_sql,
             log.logged_at.replace('\'', "''"),
@@ -224,7 +283,8 @@ pub async fn create_food_log(log: FoodLog) -> Result<FoodLog, ServerFnError> {
             log.crop.x,
             log.crop.y,
             log.crop.width,
-            log.crop.height
+            log.crop.height,
+            log.crop.rotation
         );
 
         let stmt = db.inner().prepare(&sql);
@@ -273,7 +333,7 @@ pub async fn update_food_log(log: FoodLog) -> Result<(), ServerFnError> {
 
         let sql = format!(
             "UPDATE food_logs SET recipe_id = {}, image_key = {}, logged_at = '{}', rating = {}, notes = '{}', 
-             crop_x = {}, crop_y = {}, crop_width = {}, crop_height = {}, updated_at = datetime('now') 
+             crop_x = {}, crop_y = {}, crop_width = {}, crop_height = {}, crop_rotation = {}, updated_at = datetime('now') 
              WHERE id = {}",
             recipe_id_sql,
             image_key_sql,
@@ -284,6 +344,7 @@ pub async fn update_food_log(log: FoodLog) -> Result<(), ServerFnError> {
             log.crop.y,
             log.crop.width,
             log.crop.height,
+            log.crop.rotation,
             id
         );
 
@@ -491,7 +552,7 @@ fn StarRating(rating: RwSignal<Option<i32>>, #[prop(optional)] readonly: bool) -
     }
 }
 
-/// Image cropper component with fixed aspect ratio crop box
+/// Image cropper component with fixed aspect ratio crop box, rotation, and zoom
 #[component]
 fn ImageCropper(
     image_data: ReadSignal<Option<String>>,
@@ -538,10 +599,97 @@ fn ImageCropper(
         is_dragging.set(false);
     };
 
+    let on_rotate_ccw = move |_| {
+        crop.update(|c| c.rotate_ccw());
+    };
+
+    let on_rotate_cw = move |_| {
+        crop.update(|c| c.rotate_cw());
+    };
+
+    let on_zoom_in = move |_| {
+        crop.update(|c| c.zoom_in());
+    };
+
+    let on_zoom_out = move |_| {
+        crop.update(|c| c.zoom_out());
+    };
+
     view! {
       <Show when=move || image_data.get().is_some()>
-        <div class="space-y-2">
-          <p class="text-xs text-slate-500 dark:text-slate-400">"Drag the box to select the visible area"</p>
+        <div class="space-y-3">
+          // Control buttons
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-500 dark:text-slate-400">"Drag box to pan, use buttons to rotate/zoom"</p>
+            <div class="flex items-center gap-1">
+              // Rotate counter-clockwise
+              <button
+                type="button"
+                class="p-2 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300"
+                title="Rotate left"
+                on:click=on_rotate_ccw
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 10h4V6M3 10l3.5-3.5a8 8 0 1111 11"
+                  />
+                </svg>
+              </button>
+              // Rotate clockwise
+              <button
+                type="button"
+                class="p-2 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300"
+                title="Rotate right"
+                on:click=on_rotate_cw
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 10h-4V6M21 10l-3.5-3.5a8 8 0 10-11 11"
+                  />
+                </svg>
+              </button>
+              <div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+              // Zoom out
+              <button
+                type="button"
+                class="p-2 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300"
+                title="Zoom out (larger selection)"
+                on:click=on_zoom_out
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+                  />
+                </svg>
+              </button>
+              // Zoom in
+              <button
+                type="button"
+                class="p-2 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300"
+                title="Zoom in (smaller selection)"
+                on:click=on_zoom_in
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          // Image container
           <div
             node_ref=container_ref
             class="relative w-full bg-slate-900 rounded overflow-hidden select-none"
@@ -550,29 +698,12 @@ fn ImageCropper(
             on:mouseup=on_mouse_up
             on:mouseleave=on_mouse_up
           >
-            // The image fills the container
+            // The image fills the container with rotation applied
             <img
               src=move || image_data.get().unwrap_or_default()
-              class="absolute inset-0 w-full h-full object-contain"
+              class="absolute inset-0 w-full h-full object-contain transition-transform duration-200"
+              style=move || format!("transform: rotate({}deg);", crop.get().rotation)
               draggable="false"
-            />
-            // Dark overlay with cutout for crop area
-            <div
-              class="absolute inset-0 pointer-events-none"
-              style=move || {
-                let c = crop.get();
-                format!(
-                  "background: linear-gradient(to right, rgba(0,0,0,0.6) {}%, transparent {}%, transparent {}%, rgba(0,0,0,0.6) {}%), linear-gradient(to bottom, rgba(0,0,0,0.6) {}%, transparent {}%, transparent {}%, rgba(0,0,0,0.6) {}%);",
-                  c.x,
-                  c.x,
-                  c.x + c.width,
-                  c.x + c.width,
-                  c.y,
-                  c.y,
-                  c.y + c.height,
-                  c.y + c.height,
-                )
-              }
             />
             // Top dark band
             <div
@@ -608,13 +739,7 @@ fn ImageCropper(
               class="absolute border-2 border-white shadow-lg cursor-move"
               style=move || {
                 let c = crop.get();
-                format!(
-                  "left: {}%; top: {}%; width: {}%; height: {}%; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);",
-                  c.x,
-                  c.y,
-                  c.width,
-                  c.height,
-                )
+                format!("left: {}%; top: {}%; width: {}%; height: {}%;", c.x, c.y, c.width, c.height)
               }
               on:mousedown=on_mouse_down
             >
@@ -1041,6 +1166,7 @@ fn FoodLogCard(
     let crop_y = log.crop.y;
     let crop_width = log.crop.width;
     let crop_height = log.crop.height;
+    let rotation = log.crop.rotation;
     let recipe_name = log.recipe_name.clone();
     let has_recipe = recipe_name.is_some();
     let logged_at = log.logged_at.clone();
@@ -1049,19 +1175,38 @@ fn FoodLogCard(
     let notes = log.notes.clone();
     let has_notes = !notes.is_empty();
 
+    // Calculate scale factor - image should be scaled so crop area fills the container
+    let scale = 100.0 / crop_width.min(crop_height);
+    // Calculate position to center the crop area
+    let pos_x = if (100.0 - crop_width).abs() < 0.01 {
+        0.0
+    } else {
+        (crop_x / (100.0 - crop_width)) * 100.0
+    };
+    let pos_y = if (100.0 - crop_height).abs() < 0.01 {
+        0.0
+    } else {
+        (crop_y / (100.0 - crop_height)) * 100.0
+    };
+
     view! {
       <div class="rounded-lg bg-white dark:bg-slate-800 shadow-md overflow-hidden">
         <Show when=move || has_image>
-          <div
-            class="h-48 bg-slate-200 dark:bg-slate-700 bg-no-repeat"
-            style=format!(
-              "background-image: url('{}'); background-size: {}% auto; background-position: {}% {}%;",
-              image_url,
-              (100.0 / crop_width) * 100.0,
-              if (100.0 - crop_width).abs() < 0.01 { 0.0 } else { (crop_x / (100.0 - crop_width)) * 100.0 },
-              if (100.0 - crop_height).abs() < 0.01 { 0.0 } else { (crop_y / (100.0 - crop_height)) * 100.0 },
-            )
-          />
+          <div class="h-48 bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <img
+              src=image_url.clone()
+              class="w-full h-full object-cover"
+              style=format!(
+                "transform: rotate({}deg) scale({}); transform-origin: {}% {}%; object-position: {}% {}%;",
+                rotation,
+                scale / 100.0,
+                50.0,
+                50.0,
+                pos_x,
+                pos_y,
+              )
+            />
+          </div>
         </Show>
 
         <div class="p-4">
