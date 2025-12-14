@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use server_fn::ServerFnError;
 use wasm_bindgen::JsCast;
 
+use crate::components::{LockIcon, UnlockIcon};
+
 /// Focus an HTML element by its ID.
 /// Returns true if the element was found and focused, false otherwise.
 fn focus_element_by_id(id: &str) -> bool {
@@ -27,6 +29,11 @@ fn focus_element_by_id(id: &str) -> bool {
 
 /// Duration in seconds for token validity (12 hours)
 const TOKEN_EXPIRY_SECS: u64 = 12 * 60 * 60;
+
+/// Generate the KV storage key for a token
+fn token_key(token: &str) -> String {
+    format!("token:{}", token)
+}
 
 /// Get current timestamp in seconds
 /// On SSR (CloudFlare Workers): uses worker::Date::now()
@@ -119,8 +126,7 @@ pub async fn admin_login(pin: String) -> Result<LoginResult, ServerFnError> {
     let expires_at = now + TOKEN_EXPIRY_SECS;
 
     // Store token in KV with expiration
-    // Key: "token:{token}", Value: expiration timestamp
-    let key = format!("token:{}", token);
+    let key = token_key(&token);
     let put_builder = kv
         .inner()
         .put(&key, expires_at)
@@ -145,7 +151,7 @@ pub async fn admin_validate(token: String) -> Result<ValidateResult, ServerFnErr
     let kv = expect_context::<SendKvStore>();
     let now = current_time_secs();
 
-    let key = format!("token:{}", token);
+    let key = token_key(&token);
 
     // Wrap the future in SendWrapper for single-threaded WASM
     let result = SendWrapper::new(kv.inner().get(&key).text()).await;
@@ -188,7 +194,7 @@ pub async fn admin_logout(token: String) -> Result<bool, ServerFnError> {
 
     let kv = expect_context::<SendKvStore>();
 
-    let key = format!("token:{}", token);
+    let key = token_key(&token);
 
     // Wrap the future in SendWrapper for single-threaded WASM
     match SendWrapper::new(kv.inner().delete(&key)).await {
@@ -538,7 +544,7 @@ pub fn PinModal() -> impl IntoView {
 
 /// Unlock Button Component
 #[component]
-fn UnlockButton() -> impl IntoView {
+fn UnlockButtonComponent() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
@@ -546,14 +552,7 @@ fn UnlockButton() -> impl IntoView {
         class="flex items-center gap-2 rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
         on:click=move |_| auth.open_modal()
       >
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          />
-        </svg>
+        <LockIcon />
         "Unlock"
       </button>
     }
@@ -561,7 +560,7 @@ fn UnlockButton() -> impl IntoView {
 
 /// Logout Button Component
 #[component]
-fn LogoutButton() -> impl IntoView {
+fn LogoutButtonComponent() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
@@ -574,14 +573,7 @@ fn LogoutButton() -> impl IntoView {
           });
         }
       >
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-          />
-        </svg>
+        <UnlockIcon />
         "Logout"
       </button>
     }
@@ -593,8 +585,8 @@ pub fn AdminAuthButton() -> impl IntoView {
     let auth = expect_context::<AdminAuth>();
 
     view! {
-      <Show when=move || auth.is_authenticated.get() fallback=|| view! { <UnlockButton /> }>
-        <LogoutButton />
+      <Show when=move || auth.is_authenticated.get() fallback=|| view! { <UnlockButtonComponent /> }>
+        <LogoutButtonComponent />
       </Show>
     }
 }

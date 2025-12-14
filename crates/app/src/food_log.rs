@@ -11,7 +11,10 @@ use wasm_bindgen::JsCast;
 use crate::auth::AdminAuth;
 #[cfg(not(feature = "ssr"))]
 use crate::cache::{get_cache, set_cache, FOOD_LOGS_CACHE_KEY, RECIPES_CACHE_KEY};
-use crate::components::StarIcon;
+use crate::components::{
+    detect_content_type, CloseIcon, EditIcon, ImageIcon, PlusIcon, StarIcon, INPUT_CLASS,
+    LABEL_CLASS,
+};
 use crate::recipes::{get_recipes, Recipe};
 
 // ============================================================================
@@ -894,15 +897,7 @@ fn FoodLogModal(
                         return;
                     }
                     let base64_data = parts[1].to_string();
-                    let content_type = if parts[0].contains("png") {
-                        "image/png"
-                    } else if parts[0].contains("gif") {
-                        "image/gif"
-                    } else if parts[0].contains("webp") {
-                        "image/webp"
-                    } else {
-                        "image/jpeg"
-                    };
+                    let content_type = detect_content_type(parts[0]);
 
                     match upload_food_image(base64_data, content_type.to_string()).await {
                         Ok(key) => Some(key),
@@ -948,9 +943,6 @@ fn FoodLogModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
-
     view! {
       <Show when=move || show.get()>
         <div
@@ -975,9 +967,7 @@ fn FoodLogModal(
                 class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 on:click=move |_| close()
               >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
 
@@ -989,7 +979,7 @@ fn FoodLogModal(
 
             <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
               <div>
-                <label class=label_class>"Photo"</label>
+                <label class=LABEL_CLASS>"Photo"</label>
                 <div class="space-y-2">
                   <input
                     node_ref=file_input_ref
@@ -1011,14 +1001,7 @@ fn FoodLogModal(
                       when=move || image_data.get().is_some()
                       fallback=move || {
                         view! {
-                          <svg class="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
+                          <ImageIcon class="mx-auto mb-2" />
                           <span>"Click to upload a photo"</span>
                         }
                       }
@@ -1031,9 +1014,9 @@ fn FoodLogModal(
               </div>
 
               <div>
-                <label class=label_class>"Recipe (optional)"</label>
+                <label class=LABEL_CLASS>"Recipe (optional)"</label>
                 <select
-                  class=input_class
+                  class=INPUT_CLASS
                   on:change=move |ev| {
                     let value = event_target_value(&ev);
                     if value.is_empty() {
@@ -1062,24 +1045,24 @@ fn FoodLogModal(
               </div>
 
               <div>
-                <label class=label_class>"Date"</label>
+                <label class=LABEL_CLASS>"Date"</label>
                 <input
                   type="date"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || logged_at.get()
                   on:input=move |ev| logged_at.set(event_target_value(&ev))
                 />
               </div>
 
               <div>
-                <label class=label_class>"Rating"</label>
+                <label class=LABEL_CLASS>"Rating"</label>
                 <StarRating rating=rating />
               </div>
 
               <div>
-                <label class=label_class>"Notes"</label>
+                <label class=LABEL_CLASS>"Notes"</label>
                 <textarea
-                  class=input_class
+                  class=INPUT_CLASS
                   rows="3"
                   prop:value=move || notes.get()
                   on:input=move |ev| notes.set(event_target_value(&ev))
@@ -1209,14 +1192,7 @@ fn FoodLogCard(
                   move |_| on_edit(log_for_edit.clone())
                 }
               >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
+                <EditIcon />
               </button>
             </Show>
           </div>
@@ -1305,9 +1281,7 @@ pub fn FoodLogs() -> impl IntoView {
               class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
               on:click=handle_new
             >
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
+              <PlusIcon />
               "Log Meal"
             </button>
           </Show>
