@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
 
+pub mod about;
 pub mod auth;
 pub mod cache;
 pub mod components;
@@ -46,6 +47,7 @@ pub use food_log::{
     UpdateFoodLog, UploadFoodImage,
 };
 
+use about::About;
 use auth::PinModal;
 use food_log::FoodLogs;
 use ingredients::Ingredients;
@@ -77,6 +79,7 @@ pub fn App() -> impl IntoView {
             <Route path=path!("/ingredients") view=Ingredients />
             <Route path=path!("/recipes") view=Recipes />
             <Route path=path!("/settings") view=Settings />
+            <Route path=path!("/about") view=About />
           </Routes>
         </main>
       </Router>
