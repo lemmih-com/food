@@ -1524,26 +1524,20 @@ fn IngredientTable(
           <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
             <For each=get_sorted_ingredients key=|ing| ing.id.unwrap_or(0) let:ing>
               {
-                let ing_cal = ing.clone();
-                let ing_protein = ing.clone();
-                let ing_fat = ing.clone();
-                let ing_sat_fat = ing.clone();
-                let ing_carbs = ing.clone();
-                let ing_sugar = ing.clone();
-                let ing_fiber = ing.clone();
-                let ing_salt = ing.clone();
-                let ing_for_edit = ing.clone();
+                let ing = StoredValue::new(ing);
                 let on_edit = on_edit.clone();
-                let labels = ing.labels.clone();
-                let tooltip = {
-                  let mut parts = Vec::new();
-                  if !labels.is_empty() {
-                    parts.push(format!("Labels: {}", labels.join(", ")));
-                  }
-                  parts.push(format!("Package: {}g", ing.package_size_g));
-                  parts.push(format!("Price: ${:.2}", ing.package_price));
-                  parts.join("\n")
-                };
+                let tooltip = ing
+                  .with_value(|i| {
+                    let mut parts = Vec::new();
+                    if !i.labels.is_empty() {
+                      parts.push(format!("Labels: {}", i.labels.join(", ")));
+                    }
+                    parts.push(format!("Package: {}g", i.package_size_g));
+                    parts.push(format!("Price: ${:.2}", i.package_price));
+                    parts.join("\n")
+                  });
+                let name = ing.with_value(|i| i.name.clone());
+                // Use StoredValue to avoid cloning the ingredient for each closure
                 // Build tooltip with labels, package size, and price
                 view! {
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
@@ -1554,82 +1548,106 @@ fn IngredientTable(
                       )
                       title=tooltip
                     >
-                      {ing.name.clone()}
+                      {name}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { ing_cal.calories };
-                        format!("{:.0} kcal", cal)
+                        ing
+                          .with_value(|i| {
+                            let cal = if view_mode.get() == NutrientView::Per100kcal { 100.0 } else { i.calories };
+                            format!("{:.0} kcal", cal)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_protein.per_calorie(ing_protein.protein)
-                        } else {
-                          ing_protein.protein
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.protein)
+                            } else {
+                              i.protein
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_fat.per_calorie(ing_fat.fat)
-                        } else {
-                          ing_fat.fat
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.fat)
+                            } else {
+                              i.fat
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_sat_fat.per_calorie(ing_sat_fat.saturated_fat)
-                        } else {
-                          ing_sat_fat.saturated_fat
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.saturated_fat)
+                            } else {
+                              i.saturated_fat
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_carbs.per_calorie(ing_carbs.carbs)
-                        } else {
-                          ing_carbs.carbs
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.carbs)
+                            } else {
+                              i.carbs
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_sugar.per_calorie(ing_sugar.sugar)
-                        } else {
-                          ing_sugar.sugar
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.sugar)
+                            } else {
+                              i.sugar
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_fiber.per_calorie(ing_fiber.fiber)
-                        } else {
-                          ing_fiber.fiber
-                        };
-                        format!("{:.1}g", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.fiber)
+                            } else {
+                              i.fiber
+                            };
+                            format!("{:.1}g", val)
+                          })
                       }}
                     </td>
                     <td class=cell_class>
                       {move || {
-                        let val = if view_mode.get() == NutrientView::Per100kcal {
-                          ing_salt.per_calorie(ing_salt.salt)
-                        } else {
-                          ing_salt.salt
-                        };
-                        format!("{:.0}mg", val)
+                        ing
+                          .with_value(|i| {
+                            let val = if view_mode.get() == NutrientView::Per100kcal {
+                              i.per_calorie(i.salt)
+                            } else {
+                              i.salt
+                            };
+                            format!("{:.0}mg", val)
+                          })
                       }}
                     </td>
                     <Show when=move || auth.is_authenticated.get()>
@@ -1638,9 +1656,8 @@ fn IngredientTable(
                           class="text-blue-600 hover:text-blue-800"
                           title="Edit"
                           on:click={
-                            let ing_for_edit = ing_for_edit.clone();
                             let on_edit = on_edit.clone();
-                            move |_| on_edit(ing_for_edit.clone())
+                            move |_| ing.with_value(|i| on_edit(i.clone()))
                           }
                         >
                           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

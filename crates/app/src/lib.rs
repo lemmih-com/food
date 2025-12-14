@@ -2,6 +2,7 @@
 
 pub mod auth;
 pub mod cache;
+pub mod components;
 pub mod food_log;
 pub mod ingredients;
 pub mod pages;
@@ -51,8 +52,6 @@ use ingredients::Ingredients;
 use pages::{DarkMode, Navigation};
 use recipes::Recipes;
 use settings::Settings;
-
-// Remove the old placeholder Home component since FoodLogs replaces it
 
 #[component]
 pub fn App() -> impl IntoView {
