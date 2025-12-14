@@ -3,9 +3,9 @@
 //! Contains the Navigation component and Home page.
 
 use leptos::prelude::*;
-use leptos_router::components::A;
 
 use crate::auth::AdminAuthButton;
+use crate::components::NavLink;
 
 // ============================================================================
 // Dark Mode
@@ -176,14 +176,7 @@ pub fn Navigation() -> impl IntoView {
                 {links
                   .iter()
                   .map(|&(href, label)| {
-                    view! {
-                      <A
-                        href=href
-                        attr:class="rounded px-3 py-2 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-800"
-                      >
-                        {label}
-                      </A>
-                    }
+                    view! { <NavLink href=href label=label /> }
                   })
                   .collect_view()}
               </div>
@@ -248,14 +241,7 @@ pub fn Navigation() -> impl IntoView {
                 {links
                   .iter()
                   .map(|&(href, label)| {
-                    view! {
-                      <A
-                        href=href
-                        attr:class="block rounded px-3 py-2 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-800"
-                      >
-                        {label}
-                      </A>
-                    }
+                    view! { <NavLink href=href label=label mobile=true /> }
                   })
                   .collect_view()}
               </div>
