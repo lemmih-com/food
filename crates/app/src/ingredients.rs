@@ -10,6 +10,7 @@ use wasm_bindgen::JsCast;
 use crate::auth::AdminAuth;
 #[cfg(not(feature = "ssr"))]
 use crate::cache::{get_cache, set_cache, INGREDIENTS_CACHE_KEY};
+use crate::components::{CloseIcon, EditIcon, PlusIcon, UploadIcon, INPUT_CLASS, LABEL_CLASS};
 
 // ============================================================================
 // Data Types
@@ -519,9 +520,7 @@ fn LabelBadge(label: String, on_remove: Option<Box<dyn Fn() + Send + Sync>>) -> 
                 class="ml-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
                 on:click=move |_| remove()
               >
-                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon class="h-3 w-3" />
               </button>
             }
           })}
@@ -724,9 +723,6 @@ fn IngredientModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
-
     view! {
       <Show when=move || show.get()>
         <div
@@ -751,9 +747,7 @@ fn IngredientModal(
                 class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 on:click=move |_| close()
               >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
 
@@ -766,10 +760,10 @@ fn IngredientModal(
             <div class="grid grid-cols-2 gap-4">
               // Name
               <div class="col-span-2">
-                <label class=label_class>"Name"</label>
+                <label class=LABEL_CLASS>"Name"</label>
                 <input
                   type="text"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || name.get()
                   on:input=move |ev| name.set(event_target_value(&ev))
                   placeholder="e.g., Chicken Breast"
@@ -778,11 +772,11 @@ fn IngredientModal(
 
               // Labels
               <div class="col-span-2">
-                <label class=label_class>"Labels"</label>
+                <label class=LABEL_CLASS>"Labels"</label>
                 <div class="flex gap-2 mb-2">
                   <input
                     type="text"
-                    class=input_class
+                    class=INPUT_CLASS
                     prop:value=move || new_label.get()
                     on:input=move |ev| new_label.set(event_target_value(&ev))
                     on:keypress=move |ev: web_sys::KeyboardEvent| {
@@ -823,81 +817,81 @@ fn IngredientModal(
               </div>
 
               <div>
-                <label class=label_class>"Calories (kcal)"</label>
+                <label class=LABEL_CLASS>"Calories (kcal)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || calories.get()
                   on:input=move |ev| calories.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Protein (g)"</label>
+                <label class=LABEL_CLASS>"Protein (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || protein.get()
                   on:input=move |ev| protein.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Fat (g)"</label>
+                <label class=LABEL_CLASS>"Fat (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || fat.get()
                   on:input=move |ev| fat.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Saturated Fat (g)"</label>
+                <label class=LABEL_CLASS>"Saturated Fat (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || saturated_fat.get()
                   on:input=move |ev| saturated_fat.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Carbs (g)"</label>
+                <label class=LABEL_CLASS>"Carbs (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || carbs.get()
                   on:input=move |ev| carbs.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Sugar (g)"</label>
+                <label class=LABEL_CLASS>"Sugar (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || sugar.get()
                   on:input=move |ev| sugar.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Fiber (g)"</label>
+                <label class=LABEL_CLASS>"Fiber (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || fiber.get()
                   on:input=move |ev| fiber.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Salt (mg)"</label>
+                <label class=LABEL_CLASS>"Salt (mg)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || salt.get()
                   on:input=move |ev| salt.set(event_target_value(&ev))
                 />
@@ -911,21 +905,21 @@ fn IngredientModal(
               </div>
 
               <div>
-                <label class=label_class>"Package Size (g)"</label>
+                <label class=LABEL_CLASS>"Package Size (g)"</label>
                 <input
                   type="number"
                   step="0.1"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || package_size.get()
                   on:input=move |ev| package_size.set(event_target_value(&ev))
                 />
               </div>
               <div>
-                <label class=label_class>"Price ($)"</label>
+                <label class=LABEL_CLASS>"Price ($)"</label>
                 <input
                   type="number"
                   step="0.01"
-                  class=input_class
+                  class=INPUT_CLASS
                   prop:value=move || package_price.get()
                   on:input=move |ev| package_price.set(event_target_value(&ev))
                 />
@@ -1124,7 +1118,7 @@ fn BulkImportModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono";
+    let input_class_mono = format!("{} font-mono", INPUT_CLASS);
     let cell_class = "px-2 py-1 text-xs border-b border-slate-200 dark:border-slate-600";
 
     view! {
@@ -1149,9 +1143,7 @@ fn BulkImportModal(
                 class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 on:click=move |_| close()
               >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
 
@@ -1172,7 +1164,7 @@ fn BulkImportModal(
                 "Label headers (e.g., \"Labels: protein, meat\") on their own line will set labels for following ingredients."
               </p>
               <textarea
-                class=input_class
+                class=input_class_mono.clone()
                 rows=8
                 prop:value=move || tsv_input.get()
                 on:input=move |ev| tsv_input.set(event_target_value(&ev))
@@ -1660,14 +1652,7 @@ fn IngredientTable(
                             move |_| ing.with_value(|i| on_edit(i.clone()))
                           }
                         >
-                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
+                          <EditIcon class="h-4 w-4" />
                         </button>
                       </td>
                     </Show>
@@ -1757,23 +1742,14 @@ pub fn Ingredients() -> impl IntoView {
                 class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
                 on:click=handle_new
               >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
+                <PlusIcon />
                 "New Ingredient"
               </button>
               <button
                 class="flex items-center gap-2 rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
                 on:click=move |_| show_bulk_import.set(true)
               >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
+                <UploadIcon />
                 "Bulk Import"
               </button>
             </Show>

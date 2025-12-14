@@ -10,6 +10,7 @@ use wasm_bindgen::JsCast;
 use crate::auth::AdminAuth;
 #[cfg(not(feature = "ssr"))]
 use crate::cache::{get_cache, set_cache, INGREDIENTS_CACHE_KEY, RECIPES_CACHE_KEY};
+use crate::components::{CloseIcon, EditIcon, PlusIcon, INPUT_CLASS, LABEL_CLASS};
 use crate::ingredients::{get_ingredients, Ingredient};
 
 // ============================================================================
@@ -497,14 +498,12 @@ fn IngredientSelector(
         });
     };
 
-    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-
     view! {
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">"Add Ingredient"</label>
+          <label class=LABEL_CLASS>"Add Ingredient"</label>
           <select
-            class=input_class
+            class=INPUT_CLASS
             on:change=move |ev| {
               let value = event_target_value(&ev);
               if let Ok(id) = value.parse::<i64>() {
@@ -587,14 +586,7 @@ fn IngredientSelector(
                         class="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         on:click=move |_| remove_ingredient(idx)
                       >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
+                        <CloseIcon class="h-5 w-5" />
                       </button>
                     </div>
                   }
@@ -634,7 +626,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
 
     view! {
       <div class="space-y-2">
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">"Instructions"</label>
+        <label class=LABEL_CLASS>"Instructions"</label>
         {move || {
           instructions
             .get()
@@ -646,7 +638,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
                 <div class="flex items-start gap-2">
                   <span class="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 w-6">{idx + 1}"."</span>
                   <textarea
-                    class="flex-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class=INPUT_CLASS
                     rows="2"
                     prop:value=inst_value
                     on:input=move |ev| update_instruction(idx, event_target_value(&ev))
@@ -656,9 +648,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
                     class="mt-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     on:click=move |_| remove_instruction(idx)
                   >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <CloseIcon class="h-5 w-5" />
                   </button>
                 </div>
               }
@@ -670,9 +660,7 @@ fn InstructionsEditor(instructions: RwSignal<Vec<String>>) -> impl IntoView {
           class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           on:click=add_instruction
         >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
+          <PlusIcon />
           "Add step"
         </button>
       </div>
@@ -811,9 +799,6 @@ fn RecipeModal(
         }
     };
 
-    let input_class = "w-full rounded border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-    let label_class = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
-
     view! {
       <Show when=move || show.get()>
         <div
@@ -838,9 +823,7 @@ fn RecipeModal(
                 class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 on:click=move |_| close()
               >
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
 
@@ -854,19 +837,19 @@ fn RecipeModal(
               // Basic info
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
-                  <label class=label_class>"Recipe Name"</label>
+                  <label class=LABEL_CLASS>"Recipe Name"</label>
                   <input
                     type="text"
-                    class=input_class
+                    class=INPUT_CLASS
                     prop:value=move || name.get()
                     on:input=move |ev| name.set(event_target_value(&ev))
                     placeholder="e.g., Grilled Chicken Bowl"
                   />
                 </div>
                 <div class="sm:col-span-2">
-                  <label class=label_class>"Description"</label>
+                  <label class=LABEL_CLASS>"Description"</label>
                   <textarea
-                    class=input_class
+                    class=INPUT_CLASS
                     rows="2"
                     prop:value=move || description.get()
                     on:input=move |ev| description.set(event_target_value(&ev))
@@ -874,32 +857,32 @@ fn RecipeModal(
                   />
                 </div>
                 <div>
-                  <label class=label_class>"Servings"</label>
+                  <label class=LABEL_CLASS>"Servings"</label>
                   <input
                     type="number"
                     min="1"
-                    class=input_class
+                    class=INPUT_CLASS
                     prop:value=move || servings.get()
                     on:input=move |ev| servings.set(event_target_value(&ev))
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <div>
-                    <label class=label_class>"Prep Time (min)"</label>
+                    <label class=LABEL_CLASS>"Prep Time (min)"</label>
                     <input
                       type="number"
                       min="0"
-                      class=input_class
+                      class=INPUT_CLASS
                       prop:value=move || prep_time.get()
                       on:input=move |ev| prep_time.set(event_target_value(&ev))
                     />
                   </div>
                   <div>
-                    <label class=label_class>"Cook Time (min)"</label>
+                    <label class=LABEL_CLASS>"Cook Time (min)"</label>
                     <input
                       type="number"
                       min="0"
-                      class=input_class
+                      class=INPUT_CLASS
                       prop:value=move || cook_time.get()
                       on:input=move |ev| cook_time.set(event_target_value(&ev))
                     />
@@ -1063,14 +1046,7 @@ fn RecipeCard(
                 move |_| on_edit(recipe_for_edit.clone())
               }
             >
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
+              <EditIcon />
             </button>
           </Show>
         </div>
@@ -1211,9 +1187,7 @@ pub fn Recipes() -> impl IntoView {
               class="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
               on:click=handle_new
             >
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
+              <PlusIcon />
               "New Recipe"
             </button>
           </Show>
