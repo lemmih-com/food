@@ -254,41 +254,44 @@ pub async fn get_food_logs() -> Result<Vec<FoodLog>, ServerFnError> {
 #[server]
 pub async fn create_food_log(log: FoodLog) -> Result<FoodLog, ServerFnError> {
     use send_wrapper::SendWrapper;
+    use wasm_bindgen::JsValue;
 
     let db = expect_context::<SendD1Database>();
 
     let result = SendWrapper::new(async {
-        // Build SQL with proper NULL handling using raw SQL for simplicity
-        let recipe_id_sql = log
-            .recipe_id
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "NULL".to_string());
-        let rating_sql = log
-            .rating
-            .map(|r| r.to_string())
-            .unwrap_or_else(|| "NULL".to_string());
-        let image_key_sql = log
-            .image_key
-            .as_ref()
-            .map(|k| format!("'{}'", k.replace('\'', "''")))
-            .unwrap_or_else(|| "NULL".to_string());
-
-        let sql = format!(
+        let stmt = db.inner().prepare(
             "INSERT INTO food_logs (recipe_id, image_key, logged_at, rating, notes, crop_x, crop_y, crop_width, crop_height, crop_rotation) 
-             VALUES ({}, {}, '{}', {}, '{}', {}, {}, {}, {}, {}) RETURNING id",
-            recipe_id_sql,
-            image_key_sql,
-            log.logged_at.replace('\'', "''"),
-            rating_sql,
-            log.notes.replace('\'', "''"),
-            log.crop.x,
-            log.crop.y,
-            log.crop.width,
-            log.crop.height,
-            log.crop.rotation
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
         );
 
-        let stmt = db.inner().prepare(&sql);
+        // Convert Option values to JsValue (NULL for None)
+        let recipe_id_val: JsValue = log
+            .recipe_id
+            .map(|id| (id as f64).into())
+            .unwrap_or(JsValue::NULL);
+        let image_key_val: JsValue = log
+            .image_key
+            .as_ref()
+            .map(|k| k.clone().into())
+            .unwrap_or(JsValue::NULL);
+        let rating_val: JsValue = log
+            .rating
+            .map(|r| (r as f64).into())
+            .unwrap_or(JsValue::NULL);
+
+        let stmt = stmt.bind(&[
+            recipe_id_val,
+            image_key_val,
+            log.logged_at.clone().into(),
+            rating_val,
+            log.notes.clone().into(),
+            (log.crop.x as f64).into(),
+            (log.crop.y as f64).into(),
+            (log.crop.width as f64).into(),
+            (log.crop.height as f64).into(),
+            (log.crop.rotation as f64).into(),
+        ])?;
+
         stmt.first::<serde_json::Value>(None).await
     })
     .await
@@ -310,6 +313,7 @@ pub async fn create_food_log(log: FoodLog) -> Result<FoodLog, ServerFnError> {
 #[server]
 pub async fn update_food_log(log: FoodLog) -> Result<(), ServerFnError> {
     use send_wrapper::SendWrapper;
+    use wasm_bindgen::JsValue;
 
     let db = expect_context::<SendD1Database>();
 
@@ -318,38 +322,41 @@ pub async fn update_food_log(log: FoodLog) -> Result<(), ServerFnError> {
         .ok_or_else(|| ServerFnError::new("Food log ID is required for update"))?;
 
     SendWrapper::new(async {
-        let recipe_id_sql = log
-            .recipe_id
-            .map(|rid| rid.to_string())
-            .unwrap_or_else(|| "NULL".to_string());
-        let rating_sql = log
-            .rating
-            .map(|r| r.to_string())
-            .unwrap_or_else(|| "NULL".to_string());
-        let image_key_sql = log
-            .image_key
-            .as_ref()
-            .map(|k| format!("'{}'", k.replace('\'', "''")))
-            .unwrap_or_else(|| "NULL".to_string());
-
-        let sql = format!(
-            "UPDATE food_logs SET recipe_id = {}, image_key = {}, logged_at = '{}', rating = {}, notes = '{}', 
-             crop_x = {}, crop_y = {}, crop_width = {}, crop_height = {}, crop_rotation = {}, updated_at = datetime('now') 
-             WHERE id = {}",
-            recipe_id_sql,
-            image_key_sql,
-            log.logged_at.replace('\'', "''"),
-            rating_sql,
-            log.notes.replace('\'', "''"),
-            log.crop.x,
-            log.crop.y,
-            log.crop.width,
-            log.crop.height,
-            log.crop.rotation,
-            id
+        let stmt = db.inner().prepare(
+            "UPDATE food_logs SET recipe_id = ?, image_key = ?, logged_at = ?, rating = ?, notes = ?, 
+             crop_x = ?, crop_y = ?, crop_width = ?, crop_height = ?, crop_rotation = ?, updated_at = datetime('now') 
+             WHERE id = ?",
         );
 
-        let stmt = db.inner().prepare(&sql);
+        // Convert Option values to JsValue (NULL for None)
+        let recipe_id_val: JsValue = log
+            .recipe_id
+            .map(|rid| (rid as f64).into())
+            .unwrap_or(JsValue::NULL);
+        let image_key_val: JsValue = log
+            .image_key
+            .as_ref()
+            .map(|k| k.clone().into())
+            .unwrap_or(JsValue::NULL);
+        let rating_val: JsValue = log
+            .rating
+            .map(|r| (r as f64).into())
+            .unwrap_or(JsValue::NULL);
+
+        let stmt = stmt.bind(&[
+            recipe_id_val,
+            image_key_val,
+            log.logged_at.clone().into(),
+            rating_val,
+            log.notes.clone().into(),
+            (log.crop.x as f64).into(),
+            (log.crop.y as f64).into(),
+            (log.crop.width as f64).into(),
+            (log.crop.height as f64).into(),
+            (log.crop.rotation as f64).into(),
+            (id as f64).into(),
+        ])?;
+
         stmt.run().await
     })
     .await
@@ -371,7 +378,8 @@ pub async fn delete_food_log(id: i64) -> Result<(), ServerFnError> {
     let image_key: Option<String> = SendWrapper::new(async {
         let stmt = db
             .inner()
-            .prepare(format!("SELECT image_key FROM food_logs WHERE id = {}", id));
+            .prepare("SELECT image_key FROM food_logs WHERE id = ?");
+        let stmt = stmt.bind(&[(id as f64).into()])?;
         let result = stmt.first::<serde_json::Value>(None).await?;
         Ok::<_, worker::Error>(result.and_then(|v| {
             v.get("image_key")
@@ -388,9 +396,8 @@ pub async fn delete_food_log(id: i64) -> Result<(), ServerFnError> {
 
     // Delete from D1
     SendWrapper::new(async {
-        let stmt = db
-            .inner()
-            .prepare(format!("DELETE FROM food_logs WHERE id = {}", id));
+        let stmt = db.inner().prepare("DELETE FROM food_logs WHERE id = ?");
+        let stmt = stmt.bind(&[(id as f64).into()])?;
         stmt.run().await
     })
     .await
