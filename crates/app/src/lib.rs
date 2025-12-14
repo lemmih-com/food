@@ -52,8 +52,6 @@ use pages::{DarkMode, Navigation};
 use recipes::Recipes;
 use settings::Settings;
 
-// Remove the old placeholder Home component since FoodLogs replaces it
-
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
