@@ -36,6 +36,16 @@ pub struct RecipeIngredient {
     pub salt_per_100g: f32,
 }
 
+/// Macro to generate nutrient calculation methods for RecipeIngredient.
+/// Each method calculates the nutrient amount based on effective grams.
+macro_rules! nutrient_method {
+    ($name:ident, $field:ident) => {
+        pub fn $name(&self) -> f32 {
+            self.$field * self.effective_grams() / 100.0
+        }
+    };
+}
+
 impl RecipeIngredient {
     /// Get the effective amount in grams
     pub fn effective_grams(&self) -> f32 {
@@ -46,45 +56,14 @@ impl RecipeIngredient {
         }
     }
 
-    /// Calculate calories for this ingredient
-    pub fn calories(&self) -> f32 {
-        self.calories_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate protein for this ingredient
-    pub fn protein(&self) -> f32 {
-        self.protein_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate fat for this ingredient
-    pub fn fat(&self) -> f32 {
-        self.fat_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate saturated fat for this ingredient
-    pub fn saturated_fat(&self) -> f32 {
-        self.saturated_fat_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate carbs for this ingredient
-    pub fn carbs(&self) -> f32 {
-        self.carbs_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate sugar for this ingredient
-    pub fn sugar(&self) -> f32 {
-        self.sugar_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate fiber for this ingredient
-    pub fn fiber(&self) -> f32 {
-        self.fiber_per_100g * self.effective_grams() / 100.0
-    }
-
-    /// Calculate salt for this ingredient
-    pub fn salt(&self) -> f32 {
-        self.salt_per_100g * self.effective_grams() / 100.0
-    }
+    nutrient_method!(calories, calories_per_100g);
+    nutrient_method!(protein, protein_per_100g);
+    nutrient_method!(fat, fat_per_100g);
+    nutrient_method!(saturated_fat, saturated_fat_per_100g);
+    nutrient_method!(carbs, carbs_per_100g);
+    nutrient_method!(sugar, sugar_per_100g);
+    nutrient_method!(fiber, fiber_per_100g);
+    nutrient_method!(salt, salt_per_100g);
 }
 
 /// Computed nutrition values for a recipe
