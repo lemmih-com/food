@@ -1104,7 +1104,7 @@ fn RecipeCard(
           </p>
           <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {format!(
-              "Sat. fat: {:.1}g | Sugar: {:.1}g | Fiber: {:.1}g | Salt: {:.0}mg",
+              "Sat. fat: {:.1}g | Sugar: {:.1}g | Fiber: {:.1}g | Salt: {:.1}g",
               nutrition.saturated_fat,
               nutrition.sugar,
               nutrition.fiber,

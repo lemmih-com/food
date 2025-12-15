@@ -30,7 +30,7 @@ pub struct Ingredient {
     pub carbs: f32,         // g
     pub sugar: f32,         // g
     pub fiber: f32,         // g
-    pub salt: f32,          // mg
+    pub salt: f32,          // g
     // Package info
     pub package_size_g: f32, // grams
     pub package_price: f32,  // price in local currency
@@ -887,7 +887,7 @@ fn IngredientModal(
                 />
               </div>
               <div>
-                <label class=LABEL_CLASS>"Salt (mg)"</label>
+                <label class=LABEL_CLASS>"Salt (g)"</label>
                 <input
                   type="number"
                   step="0.1"
@@ -1423,7 +1423,7 @@ fn IngredientTable(
     let w_name = "w-64"; // Ingredient name (wider to compensate for removed columns)
     let w_cal = "w-20"; // Calories
     let w_nutr = "w-16"; // Nutrient columns (protein, fat, etc.)
-    let w_salt = "w-20"; // Salt (needs more space for mg)
+    let w_salt = "w-16"; // Salt (g)
     let w_actions = "w-16"; // Actions column
 
     let cell_class = "px-3 py-3 whitespace-nowrap text-slate-700 dark:text-slate-300";
@@ -1638,7 +1638,7 @@ fn IngredientTable(
                             } else {
                               i.salt
                             };
-                            format!("{:.0}mg", val)
+                            format!("{:.1}g", val)
                           })
                       }}
                     </td>
