@@ -159,11 +159,12 @@ pub fn DarkModeToggle() -> impl IntoView {
 #[component]
 pub fn Navigation() -> impl IntoView {
     let (menu_open, set_menu_open) = signal(false);
-    let links: [(&str, &str); 4] = [
+    let links: [(&str, &str); 5] = [
         ("/", "Food Log"),
         ("/ingredients", "Ingredients"),
         ("/recipes", "Recipes"),
         ("/settings", "Settings"),
+        ("/about", "About"),
     ];
 
     view! {
